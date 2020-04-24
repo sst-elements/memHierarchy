@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -20,43 +20,34 @@
 #include "memBackend.h"
 
 namespace SST {
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
-        class VaultSimMemory : public FlagMemBackend {
-        public:
+class VaultSimMemory : public FlagMemBackend {
+public:
 /* Element Library Info */
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(VaultSimMemory,
-            "memHierarchy", "vaultsim", SST_ELI_ELEMENT_VERSION(1,0,0),
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(VaultSimMemory, "memHierarchy", "vaultsim", SST_ELI_ELEMENT_VERSION(1,0,0),
             "Backend to interface with VaultSimC, a generic vaulted memory model", SST::MemHierarchy::FlagMemBackend)
 
-            SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
+    SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
             /* Own parameters */
-            { "access_time", "Link latency for the link to the VaultSim memory model. With units (SI ok).", "100ns" } )
+            {"access_time", "Link latency for the link to the VaultSim memory model. With units (SI ok).", "100ns"} )
 
-            SST_ELI_DOCUMENT_PORTS( {
-                "cube_link", "Link to VaultSim.", {"VaultSimC.MemRespEvent",
-                                                   "VaultSimC.MemReqEvent"}
-            } )
+    SST_ELI_DOCUMENT_PORTS( {"cube_link", "Link to VaultSim.", {"VaultSimC.MemRespEvent", "VaultSimC.MemReqEvent"} } )
 
 /* Begin class definition */
-            VaultSimMemory(Component *comp, Params &params);
+    VaultSimMemory(ComponentId_t id, Params &params);
+    virtual bool issueRequest( ReqId, Addr, bool isWrite, uint32_t flags, unsigned numBytes );
+    virtual bool isClocked() { return false; }
 
-            VaultSimMemory(ComponentId_t id, Params &params);
+private:
+    void build(Params& params);
+    void handleCubeEvent(SST::Event *event);
 
-            virtual bool issueRequest(ReqId, Addr, bool isWrite, uint32_t flags, unsigned numBytes);
+    std::set<ReqId> outToCubes;
+    SST::Link *cube_link;
+};
 
-            virtual bool isClocked() { return false; }
-
-        private:
-            void build(Params &params);
-
-            void handleCubeEvent(SST::Event *event);
-
-            std::set <ReqId> outToCubes;
-            SST::Link *cube_link;
-        };
-
-    }
+}
 }
 
 #endif

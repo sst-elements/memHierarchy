@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -21,36 +21,30 @@
 #include "memBackendConvertor.h"
 
 namespace SST {
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
-        class SimpleMemBackendConvertor : public MemBackendConvertor {
-        public:
+class SimpleMemBackendConvertor : public MemBackendConvertor {
+public:
 /* Element Library Info */
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED_API(SST::MemHierarchy::SimpleMemBackendConvertor, SST::MemHierarchy::MemBackendConvertor
-            )
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED_API(SST::MemHierarchy::SimpleMemBackendConvertor, SST::MemHierarchy::MemBackendConvertor, MemBackend*, uint32_t)
 
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(SimpleMemBackendConvertor,
-            "memHierarchy", "simpleMemBackendConvertor", SST_ELI_ELEMENT_VERSION(1,0,0),
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(SimpleMemBackendConvertor, "memHierarchy", "simpleMemBackendConvertor", SST_ELI_ELEMENT_VERSION(1,0,0),
             "Converts a MemEventBase* for base MemBackend", SST::MemHierarchy::SimpleMemBackendConvertor)
 
-            SST_ELI_DOCUMENT_PARAMS( MEMBACKENDCONVERTOR_ELI_PARAMS )
+    SST_ELI_DOCUMENT_PARAMS( MEMBACKENDCONVERTOR_ELI_PARAMS )
 
-            SST_ELI_DOCUMENT_STATISTICS( MEMBACKENDCONVERTOR_ELI_STATS )
-
-            SST_ELI_DOCUMENT_SUBCOMPONENT_SLOTS( MEMBACKENDCONVERTOR_ELI_SLOTS )
+    SST_ELI_DOCUMENT_STATISTICS( MEMBACKENDCONVERTOR_ELI_STATS )
 
 /* Begin class definition */
-            SimpleMemBackendConvertor(Component *comp, Params &params);
+    SimpleMemBackendConvertor(ComponentId_t id, Params &params, MemBackend* backend, uint32_t);
 
-            SimpleMemBackendConvertor(ComponentId_t id, Params &params);
+    virtual bool issue( BaseReq* req );
 
-            virtual bool issue(BaseReq *req);
-
-            virtual void handleMemResponse(ReqId reqId) {
-                doResponse(reqId);
-            }
-        };
-
+    virtual void handleMemResponse( ReqId reqId ) {
+        doResponse(reqId);
     }
+};
+
+}
 }
 #endif

@@ -1,8 +1,8 @@
-// Copyright 2013-2018 NTESS. Under the terms
+// Copyright 2013-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright(c) 2013-2018, NTESS
+// Copyright(c) 2013-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -30,13 +30,12 @@ MultiThreadL1::MultiThreadL1(ComponentId_t id, Params &params) : Component(id) {
     output.init("", 1, 0, Output::STDOUT);
 
     int debugLevel = params.find<int>("debug_level", 0);
-    debug.init("", debugLevel, 0, (Output::output_location_t) params.find<int>("debug", 0));
+    debug.init("", debugLevel, 0, (Output::output_location_t)params.find<int>("debug", 0));
 
-    std::vector <Addr> addrArr;
+    std::vector<Addr> addrArr;
     params.find_array<Addr>("debug_addr", addrArr);
-    for (std::vector<Addr>::iterator it = addrArr.begin(); it != addrArr.end(); it++) {
+    for (std::vector<Addr>::iterator it = addrArr.begin(); it != addrArr.end(); it++)
         DEBUG_ADDR.insert(*it);
-    }
 
     /* Setup clock */
     clockHandler = new Clock::Handler<MultiThreadL1>(this, &MultiThreadL1::tick);
@@ -47,25 +46,20 @@ MultiThreadL1::MultiThreadL1(ComponentId_t id, Params &params) : Component(id) {
 
     /* Setup links */
     if (isPortConnected("cache")) {
-        cacheLink = configureLink("cache", "50ps", new Event::Handler<MultiThreadL1>(this,
-                                                                                     &MultiThreadL1::handleResponse));
+        cacheLink = configureLink("cache", "50ps", new Event::Handler<MultiThreadL1>(this, &MultiThreadL1::handleResponse));
+        if (!cacheLink)
+            output.fatal(CALL_INFO, -1, "%s, Error: unable to configure link on port 'cache'\n", getName().c_str());
     } else {
-        output.fatal(CALL_INFO, -1,
-                     "%s, Error: no connected cache port. Please connect a cache to port 'cache'\n",
-                     getName().c_str());
+        output.fatal(CALL_INFO, -1, "%s, Error: no connected cache port. Please connect a cache to port 'cache'\n", getName().c_str());
     }
 
-    if (!isPortConnected("thread0"))
-        output.fatal(CALL_INFO, -1,
-                     "%s, Error: no connected CPU ports. Please connect a CPU to port 'thread0'.\n",
-                     getName().c_str());
+    if (!isPortConnected("thread0")) output.fatal(CALL_INFO, -1, "%s, Error: no connected CPU ports. Please connect a CPU to port 'thread0'.\n", getName().c_str());
     std::string linkname = "thread0";
     int linkid = 0;
     while (isPortConnected(linkname)) {
-        SST::Link *link = configureLink(linkname, "50ps",
-                                        new Event::Handler<MultiThreadL1, unsigned int>(this,
-                                                                                        &MultiThreadL1::handleRequest,
-                                                                                        linkid));
+        SST::Link * link = configureLink(linkname, "50ps", new Event::Handler<MultiThreadL1, unsigned int>(this, &MultiThreadL1::handleRequest, linkid));
+        if (!link)
+            output.fatal(CALL_INFO, -1, "%s, Error: unable to configure link on port '%s'\n", getName().c_str(), linkname.c_str());
         threadLinks.push_back(link);
         linkid++;
         linkname = "thread" + std::to_string(linkid);
@@ -88,15 +82,15 @@ MultiThreadL1::~MultiThreadL1() {
     }
 }
 
-void MultiThreadL1::handleRequest(SST::Event *ev, unsigned int threadid) {
-    MemEventBase *event = static_cast<MemEventBase *>(ev);
+void MultiThreadL1::handleRequest(SST::Event * ev, unsigned int threadid) {
+    MemEventBase *event = static_cast<MemEventBase*>(ev);
     if (!clockOn) enableClock();
     threadRequestMap.insert(std::make_pair(event->getID(), threadid));
     requestQueue.push(event);
 }
 
-void MultiThreadL1::handleResponse(SST::Event *ev) {
-    MemEventBase *event = static_cast<MemEventBase *>(ev);
+void MultiThreadL1::handleResponse(SST::Event * ev) {
+    MemEventBase *event = static_cast<MemEventBase*>(ev);
     if (!clockOn) enableClock();
     responseQueue.push(event);
 }
@@ -117,7 +111,7 @@ bool MultiThreadL1::tick(SST::Cycle_t cycle) {
 
     /* Drain response queue */
     while (!responseQueue.empty() && sendcount > 0) {
-        MemEventBase *event = responseQueue.front();
+        MemEventBase * event = responseQueue.front();
         responseQueue.pop();
 
         unsigned int linkid = threadRequestMap.find(event->getResponseToID())->second;
@@ -147,18 +141,18 @@ void MultiThreadL1::setup() {}
 void MultiThreadL1::finish() {}
 
 /*
- *  Init: 
+ *  Init:
  *      forward all CPU events to memory hierarchy
  *      Broadcast L1's 'SST::MemHierarchy::MemEvent' event to all CPUs
  *
  */
 void MultiThreadL1::init(unsigned int phase) {
-    SST::Event *ev;
+    SST::Event * ev;
 
     // Pass CPU events to memory hierarchy, generally these are memory initialization
     for (int i = 0; i < threadLinks.size(); i++) {
         while ((ev = threadLinks[i]->recvInitData()) != NULL) {
-            MemEventInit *memEvent = dynamic_cast<MemEventInit *>(ev);
+            MemEventInit * memEvent = dynamic_cast<MemEventInit*>(ev);
             if (memEvent) {
                 cacheLink->sendInitData(memEvent->clone());
             }
@@ -168,7 +162,7 @@ void MultiThreadL1::init(unsigned int phase) {
 
     // Broadcast L1 events to connected CPUs
     while ((ev = cacheLink->recvInitData()) != NULL) {
-        MemEventInit *memEvent = dynamic_cast<MemEventInit *>(ev);
+        MemEventInit * memEvent = dynamic_cast<MemEventInit*>(ev);
         if (memEvent) {
             for (int i = 0; i < threadLinks.size(); i++) {
                 threadLinks[i]->sendInitData(memEvent->clone());

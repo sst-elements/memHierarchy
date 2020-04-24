@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -20,7 +20,7 @@
 #include <sst/core/component.h>
 #include <sst/core/output.h>
 
-#include "arielmemmgr.h"
+#include "sst/elements/ariel/arielmemmgr.h"
 
 #include <stdint.h>
 #include <deque>
@@ -30,46 +30,35 @@
 using namespace SST;
 
 namespace SST {
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
-        class MemoryManagerSieve : public ArielComponent::ArielMemoryManager {
+class MemoryManagerSieve : public ArielComponent::ArielMemoryManager {
 
-        public:
-            /* SST ELI */
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemoryManagerSieve,
-            "memHierarchy", "MemoryManagerSieve", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "Memory manager for interfacing to MemSieve", SST::ArielComponent::ArielMemoryManager)
+    public:
+        /* SST ELI */
+        SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemoryManagerSieve, "memHierarchy", "MemoryManagerSieve", SST_ELI_ELEMENT_VERSION(1,0,0),
+                "Memory manager for interfacing to MemSieve", SST::ArielComponent::ArielMemoryManager)
 
-            SST_ELI_DOCUMENT_PORTS( {
-                "alloc_link_%(corecound)d", "Each core's link memSieve", {
-                    "memHierarchy.AllocTrackEvent"}
-            } )
+        SST_ELI_DOCUMENT_PORTS( {"alloc_link_%(corecound)d", "Each core's link memSieve", {"memHierarchy.AllocTrackEvent"}} )
 
-            SST_ELI_DOCUMENT_SUBCOMPONENT_SLOTS( { "memmgr", "Which memory manager to use for translation", "SST::Ariel::ArielMemoryManager" } )
+        SST_ELI_DOCUMENT_SUBCOMPONENT_SLOTS( {"memmgr", "Which memory manager to use for translation", "SST::Ariel::ArielMemoryManager" } )
 
-            /* MemoryManagerSieve */
-            MemoryManagerSieve(ComponentId_t id, Params &params);
+        /* MemoryManagerSieve */
+        MemoryManagerSieve(ComponentId_t id, Params& params);
+        ~MemoryManagerSieve();
 
-            MemoryManagerSieve(Component *comp, Params &params) : ArielMemoryManager(comp,
-                                                                                     params) {} // Legacy
-            ~MemoryManagerSieve();
+        uint64_t translateAddress(uint64_t virtAddr);
+        void printStats();
 
-            uint64_t translateAddress(uint64_t virtAddr);
+        void freeMalloc(const uint64_t vAddr);
+        bool allocateMalloc(const uint64_t size, const uint32_t level, const uint64_t virtualAddress, const uint64_t instructionPointer, const uint32_t thread);
 
-            void printStats();
+    private:
+        std::vector<SST::Link*> allocLink;
+        ArielMemoryManager * memmgr;
+};
 
-            void freeMalloc(const uint64_t vAddr);
-
-            bool allocateMalloc(const uint64_t size, const uint32_t level,
-                                const uint64_t virtualAddress, const uint64_t instructionPointer,
-                                const uint32_t thread);
-
-        private:
-            std::vector<SST::Link *> allocLink;
-            ArielMemoryManager *memmgr;
-        };
-
-    }
+}
 }
 
 #endif

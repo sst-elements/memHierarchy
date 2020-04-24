@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -25,17 +25,18 @@ using namespace SST::MemHierarchy;
 uint64_t DMACommand::main_id = 0;
 
 DMAEngine::DMAEngine(ComponentId_t id, Params &params) :
-    Component(id) {
+    Component(id)
+{
     dbg.init("@t:DMAEngine::@p():@l " + getName() + ": ", 0, 0,
-             (Output::output_location_t) params.find<int>("debug", 0));
-    statsOutputTarget = (Output::output_location_t) params.find<int>("printStats", 0);
+            (Output::output_location_t)params.find<int>("debug", 0));
+    statsOutputTarget = (Output::output_location_t)params.find<int>("printStats", 0);
 
     TimeConverter *tc = registerClock(params.find<std::string>("clockRate", "1 GHz"),
-                                      new Clock::Handler<DMAEngine>(this, &DMAEngine::clock));
+            new Clock::Handler<DMAEngine>(this, &DMAEngine::clock));
     commandLink = configureLink("cmdLink", tc, NULL);
-    if (NULL == commandLink) dbg.fatal(CALL_INFO, 1, "Missing cmdLink\n");
+    if ( NULL == commandLink ) dbg.fatal(CALL_INFO, 1, "Missing cmdLink\n");
 
-    if (!isPortConnected("netLink")) dbg.fatal(CALL_INFO, 1, "Missing netLink\n");
+    if ( !isPortConnected("netLink") ) dbg.fatal(CALL_INFO, 1, "Missing netLink\n");
 /*
     MemNIC::ComponentInfo myInfo;
     myInfo.link_port = "netLink";
@@ -49,12 +50,14 @@ DMAEngine::DMAEngine(ComponentId_t id, Params &params) :
 }
 
 
-void DMAEngine::init(unsigned int phase) {
+void DMAEngine::init(unsigned int phase)
+{
     networkLink->init(phase);
 }
 
 
-void DMAEngine::setup(void) {
+void DMAEngine::setup(void)
+{
     networkLink->setup();
     bool blocksizeSet = false;
 
@@ -77,22 +80,20 @@ void DMAEngine::setup(void) {
 }
 
 
-void DMAEngine::finish(void) {
+void DMAEngine::finish(void)
+{
     Output out("", 0, 0, statsOutputTarget);
     out.output("DMA Controller %s stats:\n"
-               "\t # Transfers:        %"
-    PRIu64
-    "\n"
-    "\t Bytes Transferred:  %"
-    PRIu64
-    "\n",
-        getName().c_str(),
-        numTransfers,
-        bytesTransferred);
+            "\t # Transfers:        %" PRIu64 "\n"
+            "\t Bytes Transferred:  %" PRIu64 "\n",
+            getName().c_str(),
+            numTransfers,
+            bytesTransferred);
 }
 
 
-bool DMAEngine::clock(Cycle_t cycle) {
+bool DMAEngine::clock(Cycle_t cycle)
+{
     /* Process Network
      * Check Command link
      * If new command, check overlap, and delay if needed, otherwise process
@@ -104,7 +105,7 @@ bool DMAEngine::clock(Cycle_t cycle) {
     SST::Event *se = NULL;
 
 //    while ( NULL != (me = networkLink->recv()) ) {
-    /* Process network packet */
+        /* Process network packet */
 /*        Request* req = findRequest(me->getResponseToID());
 #ifdef __SST_DEBUG_OUTPUT__
         if ( NULL == req ) {
@@ -115,16 +116,16 @@ bool DMAEngine::clock(Cycle_t cycle) {
     }
 */
 
-    while (NULL != (se = commandLink->recv())) {
+    while ( NULL != (se = commandLink->recv()) ) {
         /* Process new commands */
-        DMACommand *cmd = static_cast<DMACommand *>(se);
+        DMACommand* cmd = static_cast<DMACommand*>(se);
         commandQueue.push_back(cmd);
     }
 
     /* See if we can process the next command */
-    if (!commandQueue.empty()) {
+    if ( !commandQueue.empty() ) {
         DMACommand *cmd = commandQueue.front();
-        if (isIssuable(cmd)) {
+        if ( isIssuable(cmd) ) {
             commandQueue.pop_front();
             Request *req = new Request(cmd);
             startRequest(req);
@@ -135,11 +136,11 @@ bool DMAEngine::clock(Cycle_t cycle) {
 }
 
 
-bool DMAEngine::isIssuable(DMACommand *cmd) const {
+bool DMAEngine::isIssuable(DMACommand *cmd) const
+{
     bool isOK = true;
     /* Cycle through current requests.  If any overlap, then we should wait. */
-    for (std::set<Request *>::iterator i = activeRequests.begin();
-         isOK && i != activeRequests.end(); ++i) {
+    for ( std::set<Request*>::iterator i = activeRequests.begin() ; isOK && i != activeRequests.end() ; ++i ) {
         Request *req = (*i);
         isOK = !findOverlap(req->command, cmd);
     }
@@ -148,7 +149,8 @@ bool DMAEngine::isIssuable(DMACommand *cmd) const {
 }
 
 
-void DMAEngine::startRequest(Request *req) {
+void DMAEngine::startRequest(Request *req)
+{
     assert(0);
     /*  Needs to be updated with current MemHierarchy Commands/States, MemHierarchyInterface
     dbg.debug(_L10_, "Received request to transfer from %#" PRIx64 " to 0x%" PRIx64 "\n",
@@ -169,7 +171,8 @@ void DMAEngine::startRequest(Request *req) {
 }
 
 
-void DMAEngine::processPacket(Request *req, MemEventBase *ev) {
+void DMAEngine::processPacket(Request *req, MemEventBase *ev)
+{
     assert(0);
     /*  Needs to be updated with current MemHierarchy Commands/States, MemHierarchyInterface
     if ( ev->getCmd() == GetSResp) {
@@ -202,7 +205,8 @@ void DMAEngine::processPacket(Request *req, MemEventBase *ev) {
 
 
 /* Returns true if there is overlap */
-bool DMAEngine::findOverlap(DMACommand *c1, DMACommand *c2) const {
+bool DMAEngine::findOverlap(DMACommand *c1, DMACommand *c2) const
+{
     return (findOverlap(c1->src, c1->size, c2->src, c2->size) ||
             findOverlap(c1->src, c1->size, c2->dst, c2->size) ||
             findOverlap(c1->dst, c1->size, c2->src, c2->size) ||
@@ -211,18 +215,20 @@ bool DMAEngine::findOverlap(DMACommand *c1, DMACommand *c2) const {
 
 
 /* Returns true if there is overlap */
-bool DMAEngine::findOverlap(Addr a1, size_t s1, Addr a2, size_t s2) const {
+bool DMAEngine::findOverlap(Addr a1, size_t s1, Addr a2, size_t s2) const
+{
     Addr end1 = a1 + s1;
     Addr end2 = a2 + s2;
 
-    return ((a1 <= end2) || (a2 <= end1));
+    return (( a1 <= end2 ) || ( a2 <= end1 ));
 }
 
 
-DMAEngine::Request *DMAEngine::findRequest(SST::Event::id_type id) {
-    for (std::set<Request *>::iterator i = activeRequests.begin(); i != activeRequests.end(); ++i) {
+DMAEngine::Request* DMAEngine::findRequest(SST::Event::id_type id)
+{
+    for ( std::set<Request*>::iterator i = activeRequests.begin() ; i != activeRequests.end() ; ++i ) {
         Request *req = (*i);
-        if (req->loadKeys.count(id) || req->storeKeys.count(id))
+        if ( req->loadKeys.count(id) || req->storeKeys.count(id) )
             return req;
     }
     return NULL;

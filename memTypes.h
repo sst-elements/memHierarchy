@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -22,22 +22,15 @@
 
 #include "util.h"
 
-namespace SST {
-    namespace MemHierarchy {
+namespace SST { namespace MemHierarchy {
 
-        using namespace std;
+using namespace std;
 
 
 // Command attributes
-        enum class CommandClass {
-            Request, Data, Ack, ForwardRequest
-        };     // TODO - route messages on VCs based on command class
-        enum class BasicCommandClass {
-            Request, Response
-        };                   // Whether a command is a request or response
-        enum class MemEventType {
-            Cache, Move, Custom
-        };                    // For parsing which kind of event a MemEventBase is, 'Custom' is a catchall for types memH doesn't know about
+enum class CommandClass { Request, Data, Ack, ForwardRequest };     // TODO - route messages on VCs based on command class
+enum class BasicCommandClass {Request, Response};                   // Whether a command is a request or response
+enum class MemEventType { Cache, Move, Custom };                    // For parsing which kind of event a MemEventBase is, 'Custom' is a catchall for types memH doesn't know about
 
 
 
@@ -66,6 +59,7 @@ namespace SST {
     X(PutS,             AckPut,         Request,    Request,        1, 1,   Cache)   /* Clean replacement from S->I:      Remove sharer */\
     X(PutM,             AckPut,         Request,    Request,        1, 1,   Cache)   /* Dirty replacement from M/O->I:    Remove owner and writeback data */\
     X(PutE,             AckPut,         Request,    Request,        1, 1,   Cache)   /* Clean replacement from E->I:      Remove owner but don't writeback data */\
+    X(PutX,             AckPut,         Request,    Request,        1, 1,   Cache)   /* Clean downgrade from E->S:        Remove owner, add as sharer, don't writeback data */\
     /* Invalidations*/\
     X(Inv,              AckInv,         Request,    ForwardRequest, 0, 0,   Cache)   /* Other write request:  Invalidate cache line */\
     X(ForceInv,         AckInv,         Request,    ForwardRequest, 0, 0,   Cache)   /* Force invalidation even if line is modified */ \
@@ -88,68 +82,69 @@ namespace SST {
      */\
     X(CustomReq,        CustomResp,     Request,    Request,        1, 0,   Custom) \
     X(CustomResp,       NULLCMD,        Response,   Data,           0, 0,   Custom) \
-    X(CustomAck,        NULLCMD,        Response,   Ack,            0, 0,   Custom)
+    X(CustomAck,        NULLCMD,        Response,   Ack,            0, 0,   Custom) \
+    X(Evict,            NULLCMD,        Request,    Request,        0, 0,   Cache)
 
 /** Valid commands for the MemEvent */
-        enum class Command {
-#define X(a, b, c, d, e, f, g) a,
-            X_CMDS
+enum class Command {
+#define X(a,b,c,d,e,f,g) a,
+    X_CMDS
 #undef X
-            LAST_CMD
-        };
+    LAST_CMD
+};
 
 /** Response commands for MemEvents */
-        static const Command CommandResponse[] = {
-#define X(a, b, c, d, e, f, g) Command::b,
-            X_CMDS
+static const Command CommandResponse[] = {
+#define X(a,b,c,d,e,f,g) Command::b,
+    X_CMDS
 #undef X
-        };
+};
 
 /** Get basic command class (request or response) */
-        static const BasicCommandClass BasicCommandClassArr[] = {
-#define X(a, b, c, d, e, f, g) BasicCommandClass::c,
-            X_CMDS
+static const BasicCommandClass BasicCommandClassArr[] = {
+#define X(a,b,c,d,e,f,g) BasicCommandClass::c,
+    X_CMDS
 #undef X
-        };
+};
 
 /** Get complete command type (defined in util.h) */
-        static const CommandClass CommandClassArr[] = {
-#define X(a, b, c, d, e, f, g) CommandClass::d,
-            X_CMDS
+static const CommandClass CommandClassArr[] = {
+#define X(a,b,c,d,e,f,g) CommandClass::d,
+    X_CMDS
 #undef X
-        };
+};
 
-        static const bool CommandCPUSide[] = {
-#define X(a, b, c, d, e, f, g) e,
-            X_CMDS
+static const bool CommandCPUSide[] = {
+#define X(a,b,c,d,e,f,g) e,
+    X_CMDS
 #undef X
-        };
+};
 
-        static const bool CommandWriteback[] = {
-#define X(a, b, c, d, e, f, g) f,
-            X_CMDS
+static const bool CommandWriteback[] = {
+#define X(a,b,c,d,e,f,g) f,
+    X_CMDS
 #undef X
-        };
+};
 
 /** Array of the stringify'd version of the MemEvent Commands.  Useful for printing. */
-        static const char *CommandString[] __attribute__((unused)) = {
-#define X(a, b, c, d, e, f, g) #a ,
-            X_CMDS
+static const char* CommandString[] __attribute__((unused)) = {
+#define X(a,b,c,d,e,f,g) #a ,
+    X_CMDS
 #undef X
-        };
+};
 
-        static const MemEventType MemEventTypeArr[] = {
-#define X(a, b, c, d, e, f, g) MemEventType::g,
-            X_CMDS
+static const MemEventType MemEventTypeArr[] = {
+#define X(a,b,c,d,e,f,g) MemEventType::g,
+    X_CMDS
 #undef X
-        };
+};
 
 // statistics for the network memory inspector
-        static const std::vector <ElementInfoStatistic> networkMemoryInspector_statistics = {
-#define X(a, b, c, d, e, f, g) { #a, #a, "memEvents", 1},
-            X_CMDS
+static const std::vector<ElementInfoStatistic> networkMemoryInspector_statistics = {
+#define X(a,b,c,d,e,f,g) { #a, #a, "memEvents", 1},
+    X_CMDS
 #undef X
-        };
+};
 
 
 #undef X_CMDS
@@ -181,43 +176,52 @@ namespace SST {
     X(E_D,      E)  /* E with sharers, waiting for data from memory for another GetS request */\
     X(M_D,      M)  /* M with sharers, waiting for data from memory for another GetS request */\
     X(SM_D,     SM) /* SM, waiting for data from memory for another GetS request */\
+    X(SB_D,     S_B) /* S_B, waiting for data from memory for another GetS request */\
     X(S_Inv,    S)  /* S, waiting for Invalidation acks from sharers */\
     X(SM_Inv,   SM) /* SM, waiting for Invalidation acks from sharers */\
     X(SD_Inv,   IS) /* S_D, got Invalidation, waiting for acks */\
     X(MI,       I) \
     X(EI,       I) \
     X(SI,       I) \
+    X(M_B,      M)  /* M, blocked while waiting for a response (currently used for flushes) */\
+    X(E_B,      E)  /* E, blocked while waiting for a response (currently used for flushes) */\
     X(S_B,      S)  /* S, blocked while waiting for a response (currently used for flushes) */\
     X(I_B,      I)  /* I, blocked while waiting for a response (currently used for flushes) */\
     X(SB_Inv,   S_B)/* Was in S_B, got an Inv, resolving Inv first */\
+    X(IA,       I)  /* Still I, but reserve line for a pending fill */\
+    X(SA,       S)  /* Still S, but reserve line for a pending fill */\
+    X(EA,       E)  /* Still E, but reserve line for a pending fill */\
+    X(MA,       M)  /* Still M, but reserve line for a pending fill */\
     X(NULLST,   NULLST)
 
-        typedef enum {
-#define X(a, b) a,
-            STATE_TYPES
+typedef enum {
+#define X(a,b) a,
+    STATE_TYPES
 #undef X
-        } State;
+    LAST_STATE
+} State;
 
 /** Array of the stringify'd version of the MemEvent Commands.  Useful for printing. */
-        static const char *StateString[] __attribute__((unused)) = {
-#define X(a, b) #a ,
-            STATE_TYPES
+static const char* StateString[] __attribute__((unused)) = {
+#define X(a,b) #a ,
+    STATE_TYPES
 #undef X
-        };
+};
 
-        static State NextState[] __attribute__((unused)) = {
-#define X(a, b) b,
-            STATE_TYPES
+static State NextState[] __attribute__((unused)) = {
+#define X(a,b) b,
+    STATE_TYPES
 #undef X
-        };
+};
 
 #undef STATE_TYPES
 
-        static const std::string NONE = "None";
+static const std::string NONE = "None";
 
-    }
-}
+}}
 
+// Define status types used internally to classify event handling resutls
+enum class MemEventStatus { OK, Stall, Reject };
 
 /* Define an address region by start/end & interleaving */
 struct MemRegion {

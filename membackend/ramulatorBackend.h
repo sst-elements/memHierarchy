@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -27,47 +27,41 @@
 #endif
 
 namespace SST {
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
-        class ramulatorMemory : public SimpleMemBackend {
-        public:
+class ramulatorMemory : public SimpleMemBackend {
+public:
 /* Element Library Info */
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(ramulatorMemory,
-            "memHierarchy", "ramulator", SST_ELI_ELEMENT_VERSION(1,0,0),
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(ramulatorMemory, "memHierarchy", "ramulator", SST_ELI_ELEMENT_VERSION(1,0,0),
             "Ramulator-driven memory timings", SST::MemHierarchy::SimpleMemBackend)
 
-            SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
+    SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
             /* Own parameters */
-            { "verbose", "Sets the verbosity of the backend output", "0" },
-            { "configFile", "Name of the Ramulator Device config file", NULL } )
+            {"verbose",     "Sets the verbosity of the backend output", "0"},
+            {"configFile",  "Name of the Ramulator Device config file", NULL} )
 
 /* Begin class definition */
-            ramulatorMemory(Component *comp, Params &params);
+    ramulatorMemory(ComponentId_t id, Params &params);
+    bool issueRequest(ReqId, Addr, bool, unsigned );
+    //virtual bool issueRequest(DRAMReq *req);
+    virtual bool clock(Cycle_t cycle);
+    virtual void finish();
 
-            ramulatorMemory(ComponentId_t id, Params &params);
+protected:
+    ramulator::Gem5Wrapper *memSystem;
+    std::function<void(ramulator::Request&)> callBackFunc;
 
-            bool issueRequest(ReqId, Addr, bool, unsigned);
+    // Track outstanding requests
+    std::map<uint64_t, std::deque<ReqId> > dramReqs;
+    std::set<ReqId> writes;
 
-            //virtual bool issueRequest(DRAMReq *req);
-            virtual bool clock(Cycle_t cycle);
+    void ramulatorDone(ramulator::Request& req);
 
-            virtual void finish();
+private:
+    void build(Params& params);
+};
 
-        protected:
-            ramulator::Gem5Wrapper *memSystem;
-            std::function<void(ramulator::Request & )> callBackFunc;
-
-            // Track outstanding requests
-            std::map <uint64_t, std::deque<ReqId>> dramReqs;
-            std::set <ReqId> writes;
-
-            void ramulatorDone(ramulator::Request &req);
-
-        private:
-            void build(Params &params);
-        };
-
-    }
+}
 }
 
 #endif

@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -16,31 +16,21 @@
 
 #include <sst/core/sst_config.h>
 #include <sst/core/params.h>
-#include "util.h"
-#include "membackend/simpleMemScratchBackendConvertor.h"
-#include "membackend/memBackend.h"
+#include "../util.h"
+#include "simpleMemScratchBackendConvertor.h"
+#include "memBackend.h"
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 
-SimpleMemScratchBackendConvertor::SimpleMemScratchBackendConvertor(Component *comp, Params &params)
-    :
-    ScratchBackendConvertor(comp, params) {
+
+SimpleMemScratchBackendConvertor::SimpleMemScratchBackendConvertor(ComponentId_t id, Params &params) :
+        ScratchBackendConvertor(id, params)
+{
     using std::placeholders::_1;
-    static_cast<SimpleMemBackend *>(m_backend)->setResponseHandler(
-        std::bind(&SimpleMemScratchBackendConvertor::handleMemResponse, this, _1));
+    static_cast<SimpleMemBackend*>(m_backend)->setResponseHandler( std::bind( &SimpleMemScratchBackendConvertor::handleMemResponse, this, _1 ) );
 }
 
-SimpleMemScratchBackendConvertor::SimpleMemScratchBackendConvertor(ComponentId_t id, Params &params)
-    :
-    ScratchBackendConvertor(id, params) {
-    using std::placeholders::_1;
-    static_cast<SimpleMemBackend *>(m_backend)->setResponseHandler(
-        std::bind(&SimpleMemScratchBackendConvertor::handleMemResponse, this, _1));
-}
-
-bool SimpleMemScratchBackendConvertor::issue(MemReq *req) {
-    return static_cast<SimpleMemBackend *>(m_backend)->issueRequest(req->id(), req->addr(),
-                                                                    req->isWrite(),
-                                                                    m_backendRequestWidth);
+bool SimpleMemScratchBackendConvertor::issue( MemReq* req ) {
+    return static_cast<SimpleMemBackend*>(m_backend)->issueRequest( req->id(), req->addr(), req->isWrite(), m_backendRequestWidth );
 }

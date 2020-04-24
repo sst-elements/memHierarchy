@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -32,13 +32,12 @@
 #endif
 
 namespace SST {
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
-        class DRAMSimMemory : public SimpleMemBackend {
-        public:
+class DRAMSimMemory : public SimpleMemBackend {
+public:
 /* Element Library Info */
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(DRAMSimMemory,
-            "memHierarchy", "dramsim", SST_ELI_ELEMENT_VERSION(1,0,0),
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(DRAMSimMemory, "memHierarchy", "dramsim", SST_ELI_ELEMENT_VERSION(1,0,0),
             "DRAMSim-driven memory timings", SST::MemHierarchy::SimpleMemBackend)
 
 #define DRAMSIM_ELI_PARAMS MEMBACKEND_ELI_PARAMS,\
@@ -47,30 +46,26 @@ namespace SST {
             {"device_ini",  "Name of the DRAMSim Device config file",   NULL},\
             {"system_ini",  "Name of the DRAMSim Device system file",   NULL}
 
-            SST_ELI_DOCUMENT_PARAMS( DRAMSIM_ELI_PARAMS )
+    SST_ELI_DOCUMENT_PARAMS( DRAMSIM_ELI_PARAMS )
 
 /* Begin class definition */
-            DRAMSimMemory(Component *comp, Params &params);
+    DRAMSimMemory(ComponentId_t id, Params &params);
 
-            DRAMSimMemory(ComponentId_t id, Params &params);
+    virtual bool issueRequest(ReqId, Addr, bool, unsigned );
+    virtual bool clock(Cycle_t cycle);
+    virtual void finish();
 
-            virtual bool issueRequest(ReqId, Addr, bool, unsigned);
+protected:
+    void dramSimDone(unsigned int id, uint64_t addr, uint64_t clockcycle);
 
-            virtual bool clock(Cycle_t cycle);
+    DRAMSim::MultiChannelMemorySystem *memSystem;
+    std::map<uint64_t, std::deque<ReqId> > dramReqs;
 
-            virtual void finish();
+private:
+    void build(Params& params);
+};
 
-        protected:
-            void dramSimDone(unsigned int id, uint64_t addr, uint64_t clockcycle);
-
-            DRAMSim::MultiChannelMemorySystem *memSystem;
-            std::map <uint64_t, std::deque<ReqId>> dramReqs;
-
-        private:
-            void build(Params &params);
-        };
-
-    }
+}
 }
 
 #endif

@@ -1,9 +1,9 @@
 // -*- mode: c++ -*-
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -16,38 +16,42 @@
 
 
 #include <sst/core/sst_config.h>
-#include <networkMemInspector.h>
-#include <memNIC.h>
+#include "networkMemInspector.h"
+#include "memNIC.h"
 
-namespace SST {
-    namespace MemHierarchy {
+namespace SST { namespace MemHierarchy {
 
-        networkMemInspector::networkMemInspector(Component *parent, Params &params)
-            : NetworkInspector(parent) {
-            // should fix to have this be a param
-            dbg.init("@R:netMemInspect::@p():@l " + getName() + ": ", 0, 0,
-                     Output::STDOUT);
+networkMemInspector::networkMemInspector(ComponentId_t id, Params &params, const std::string& sub_id)
+    : NetworkInspector(id) {
+    // should fix to have this be a param
+    dbg.init("@R:netMemInspect::@p():@l " + getName() + ": ", 0, 0,
+             Output::STDOUT);
 
-        }
-
-        void networkMemInspector::initialize(std::string id) {
-            // Init the stats
-            for (int i = 0; i < (int) Command::LAST_CMD; ++i) {
-                memCmdStat[i] = registerStatistic<uint64_t>(CommandString[i], id);
-            }
-        }
-
-        void networkMemInspector::inspectNetworkData(SimpleNetwork::Request *req) {
-            MemNIC::MemRtrEvent *mre = dynamic_cast<MemNIC::MemRtrEvent *>(req->inspectPayload());
-            if (mre) {
-                memCmdStat[(int) mre->event->getCmd()]->addData(1);
-            } else {
-                dbg.output(CALL_INFO, "Unexpected payload encountered. Ignoring.\n");
-            }
-        }
-
+    // Init the stats
+    for (int i = 0; i < (int)Command::LAST_CMD; ++i) {
+        memCmdStat[i] = registerStatistic<uint64_t>(CommandString[i],sub_id);
     }
-} // close sst::memhierarchy namespace
+}
+
+#ifndef SST_ENABLE_PREVIEW_BUILD
+void networkMemInspector::initialize(std::string id) {
+    // Init the stats
+    for (int i = 0; i < (int)Command::LAST_CMD; ++i) {
+        memCmdStat[i] = registerStatistic<uint64_t>(CommandString[i],id);
+    }
+}
+#endif
+
+void networkMemInspector::inspectNetworkData(SimpleNetwork::Request* req) {
+    MemNIC::MemRtrEvent *mre = dynamic_cast<MemNIC::MemRtrEvent*>(req->inspectPayload());
+    if (mre) {
+        memCmdStat[(int)mre->event->getCmd()]->addData(1);
+    } else {
+        dbg.output(CALL_INFO,"Unexpected payload encountered. Ignoring.\n");
+    }
+}
+
+}} // close sst::memhierarchy namespace
 
 
 

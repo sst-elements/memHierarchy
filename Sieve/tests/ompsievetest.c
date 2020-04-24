@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -26,32 +26,32 @@
  *      * accesses to mallocs by different threads
  *
  */
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
     const int n = 20;
-    int **the_array = (int **) malloc(sizeof(int *) * n);
+    int** the_array = (int**) malloc(sizeof(int*) * n);
 
     int i = 0;
-#pragma omp parallel for
-    for (i = 0; i < n; ++i) {
-        the_array[i] = (int *) malloc(sizeof(int) * n);
+    #pragma omp parallel for
+    for(i = 0; i < n; ++i) {
+    	the_array[i] = (int*) malloc(sizeof(int) * n);
         int j = 0;
         for (j = 0; j < n; ++j) {
             the_array[i][j] = 0;    // initialize
         }
     }
 
-#pragma omp parallel for
-    for (i = 0; i < n; ++i) {
-        int j = 0;
+    #pragma omp parallel for
+    for(i = 0; i < n; ++i) {
+    	int j = 0;
 
-        for (j = 0; j < n; ++j) {
-            if (j < i) {
-                the_array[i][j] = 1;
-            } else {
-                the_array[i][j] = 0;
-            }
-        }
+        for(j = 0; j < n; ++j) {
+	    if (j < i) {
+		the_array[i][j] = 1;
+	    } else {
+	        the_array[i][j] = 0;
+	    }
+	}
     }
 
     // Now have a triangle matrix, no do something with std lib
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 
     printf("The vector is:\n");
     for (std::vector<int>::iterator it = rowSums.begin(); it != rowSums.end(); it++) {
-        printf("%d\n", *it);
+	    printf("%d\n", *it);
     }
 
 }

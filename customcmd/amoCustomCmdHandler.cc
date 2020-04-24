@@ -1,8 +1,8 @@
-// Copyright 2013-2018 NTESS. Under the terms
+// Copyright 2013-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2013-2018, NTESS
+// Copyright (c) 2013-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -15,32 +15,32 @@
 
 #include <sst/core/sst_config.h>
 
-#include "customcmd/amoCustomCmdHandler.h"
-#include "customcmd/customOpCodeCmd.h"
-#include "customcmd/customCmdEvent.h"
+#include "amoCustomCmdHandler.h"
+#include "customOpCodeCmd.h"
+#include "customCmdEvent.h"
 
 using namespace std;
 using namespace SST;
 using namespace SST::MemHierarchy;
 
-CustomCmdMemHandler::MemEventInfo AMOCustomCmdMemHandler::receive(MemEventBase *ev) {
-    CustomCmdMemHandler::MemEventInfo MEI(ev->getRoutingAddress(), true);
+CustomCmdMemHandler::MemEventInfo AMOCustomCmdMemHandler::receive(MemEventBase* ev){
+    CustomCmdMemHandler::MemEventInfo MEI(ev->getRoutingAddress(),true);
     return MEI;
 }
 
-CustomCmdInfo *AMOCustomCmdMemHandler::ready(MemEventBase *ev) {
-    CustomCmdEvent *cme = static_cast<CustomCmdEvent *>(ev);
+CustomCmdInfo* AMOCustomCmdMemHandler::ready(MemEventBase* ev){
+    CustomCmdEvent * cme = static_cast<CustomCmdEvent*>(ev);
     CustomOpCodeCmdInfo *CI = new CustomOpCodeCmdInfo(cme->getID(),
-                                                      cme->getRqstr(),
-                                                      cme->getAddr(),
-                                                      cme->getOpCode(),
-                                                      MemEventBase::F_SUCCESS);
+                                        cme->getRqstr(),
+                                        cme->getAddr(),
+                                        cme->getOpCode(),
+                                        MemEventBase::F_SUCCESS);
     return CI;
 }
 
-MemEventBase *AMOCustomCmdMemHandler::finish(MemEventBase *ev, uint32_t flags) {
-    if (ev->queryFlag(MemEventBase::F_NORESPONSE) ||
-        ((flags & MemEventBase::F_NORESPONSE) > 0)) {
+MemEventBase* AMOCustomCmdMemHandler::finish(MemEventBase *ev, uint32_t flags){
+    if(ev->queryFlag(MemEventBase::F_NORESPONSE)||
+         ((flags & MemEventBase::F_NORESPONSE)>0)){
         // posted request
         return nullptr;
     }

@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -16,8 +16,8 @@
 
 #include <sst/core/sst_config.h>
 #include <sst/core/link.h>
-#include "util.h"
-#include "membackend/simpleDRAMBackend.h"
+#include "../util.h"
+#include "simpleDRAMBackend.h"
 
 using namespace SST;
 using namespace SST::MemHierarchy;
@@ -47,15 +47,9 @@ using namespace SST::MemHierarchy;
  */
 
 
-SimpleDRAM::SimpleDRAM(Component *comp, Params &params) : SimpleMemBackend(comp, params) {
-    build(params);
-}
+SimpleDRAM::SimpleDRAM(ComponentId_t id, Params &params) : SimpleMemBackend(id, params){ build(params); }
 
-SimpleDRAM::SimpleDRAM(ComponentId_t id, Params &params) : SimpleMemBackend(id, params) {
-    build(params);
-}
-
-void SimpleDRAM::build(Params &params) {
+void SimpleDRAM::build(Params& params) {
     // Get parameters
     tCAS = params.find<uint64_t>("tCAS", 9);
     tRCD = params.find<uint64_t>("tRCD", 9);
@@ -73,9 +67,7 @@ void SimpleDRAM::build(Params &params) {
     // Check parameters
     // Supported policies are 'open', 'closed' or 'dynamic'
     if (policyStr != "closed" && policyStr != "open") {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): row_policy - must be 'closed' or 'open'. You specified '%s'.\n",
-                      getName().c_str(), policyStr.c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): row_policy - must be 'closed' or 'open'. You specified '%s'.\n", getName().c_str(), policyStr.c_str());
     }
 
     if (policyStr == "closed") policy = RowPolicy::CLOSED;
@@ -83,50 +75,38 @@ void SimpleDRAM::build(Params &params) {
 
     // banks needs to be a power of 2 -> use to set bank mask
     if (!isPowerOfTwo(banks)) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): banks - must be a power of two. You specified %"
-        PRIu64
-        ".\n", getName().c_str(), banks);
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): banks - must be a power of two. You specified %" PRIu64 ".\n", getName().c_str(), banks);
     }
     bankMask = banks - 1;
 
     // line size needs to be a power of 2 and have units of bytes
     if (!(lineSize.hasUnits("B"))) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): cache_line_size_in_bytes - must have units of 'B' (bytes). The units you specified were '%s'.\n",
-                      getName().c_str(), lineSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): cache_line_size_in_bytes - must have units of 'B' (bytes). The units you specified were '%s'.\n", getName().c_str(), lineSize.toString().c_str());
     }
     if (!isPowerOfTwo(lineSize.getRoundedValue())) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): cache_line_size_in_bytes - must be a power of two. You specified %s.\n",
-                      getName().c_str(), lineSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): cache_line_size_in_bytes - must be a power of two. You specified %s.\n", getName().c_str(), lineSize.toString().c_str());
     }
     lineOffset = log2Of(lineSize.getRoundedValue());
 
     // row size (# columns) needs to be power of 2 and have units of bytes
     if (!(rowSize.hasUnits("B"))) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): row_size - must have units of 'B' (bytes). You specified %s.\n",
-                      getName().c_str(), rowSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): row_size - must have units of 'B' (bytes). You specified %s.\n", getName().c_str(), rowSize.toString().c_str());
     }
     if (!isPowerOfTwo(rowSize.getRoundedValue())) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): row_size - must be a power of two. You specified %s.\n",
-                      getName().c_str(), rowSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): row_size - must be a power of two. You specified %s.\n", getName().c_str(), rowSize.toString().c_str());
     }
     rowOffset = log2Of(rowSize.getRoundedValue());
 
     // Bookkeeping for bank/row state
-    busy = (bool *) malloc(sizeof(bool) * banks);
-    openRow = (int *) malloc(sizeof(int) * banks);
+    busy = (bool*) malloc(sizeof(bool) * banks);
+    openRow = (int*) malloc(sizeof(int) * banks);
     for (int i = 0; i < banks; i++) {
         openRow[i] = -1;
         busy[i] = false;
     }
 
     // Self link for timing requests
-    self_link = configureSelfLink("Self", cycTime, new Event::Handler<SimpleDRAM>(this,
-                                                                                  &SimpleDRAM::handleSelfEvent));
+    self_link = configureSelfLink("Self", cycTime, new Event::Handler<SimpleDRAM>(this, &SimpleDRAM::handleSelfEvent));
 
     // Some statistics
     statRowHit = registerStatistic<uint64_t>("row_already_open");
@@ -137,9 +117,9 @@ void SimpleDRAM::build(Params &params) {
 /*
  *  Return response and free bank
  */
-void SimpleDRAM::handleSelfEvent(SST::Event *event) {
-    MemCtrlEvent *ev = static_cast<MemCtrlEvent *>(event);
-    if (!ev->close) {
+void SimpleDRAM::handleSelfEvent(SST::Event *event){
+    MemCtrlEvent *ev = static_cast<MemCtrlEvent*>(event);
+    if ( ! ev->close ) {
         if (policy == RowPolicy::CLOSED) {
             self_link->send(tRP, new MemCtrlEvent(ev->bank));
         } else {
@@ -154,7 +134,7 @@ void SimpleDRAM::handleSelfEvent(SST::Event *event) {
     }
 }
 
-bool SimpleDRAM::issueRequest(ReqId reqId, Addr addr, bool isWrite, unsigned numBytes) {
+bool SimpleDRAM::issueRequest( ReqId reqId, Addr addr, bool isWrite, unsigned numBytes ){
 
     // Determine bank & row for address
     //  Basic mapping: interleave cache lines across banks
@@ -183,7 +163,7 @@ bool SimpleDRAM::issueRequest(ReqId reqId, Addr addr, bool isWrite, unsigned num
         statRowHit->addData(1);
     }
     busy[bank] = true;
-    self_link->send(latency, new MemCtrlEvent(bank, reqId));
+    self_link->send(latency, new MemCtrlEvent( bank, reqId ));
 
     return true;
 }

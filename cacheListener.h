@@ -1,10 +1,10 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
-// 
-// Copyright (c) 2009-2019, NTESS
+//
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
-// 
+//
 // Portions are copyright of other developers:
 // See the file CONTRIBUTORS.TXT in the top level directory
 // the distribution for more information.
@@ -13,7 +13,7 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-/* 
+/*
  * File:   cacheFactory.cc
  * Author: Branden Moore / Si Hammond
  */
@@ -32,77 +32,59 @@
 using namespace SST;
 
 namespace SST {
-    class Output;
+class Output;
 
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
-        enum NotifyAccessType {
-            READ, WRITE, EVICT
-        };
-        enum NotifyResultType {
-            HIT, MISS, NA
-        };
+    enum NotifyAccessType{ READ, WRITE, EVICT, PREFETCH };
+    enum NotifyResultType{ HIT, MISS, NA };
 
-        class CacheListenerNotification {
-        public:
-            CacheListenerNotification(const Addr tAddr, const Addr pAddr, const Addr vAddr,
-                                      const Addr iPtr, const uint32_t reqSize,
-                                      NotifyAccessType accessT,
-                                      NotifyResultType resultT) :
-                size(reqSize), targAddr(tAddr), physAddr(pAddr), virtAddr(vAddr), instPtr(iPtr),
-                access(accessT), result(resultT) {}
+class CacheListenerNotification {
+public:
+    CacheListenerNotification(const Addr tAddr, const Addr pAddr, const Addr vAddr,
+                              const Addr iPtr, const uint32_t reqSize,
+                              NotifyAccessType accessT,
+                              NotifyResultType resultT) :
+        size(reqSize), targAddr(tAddr), physAddr(pAddr), virtAddr(vAddr), instPtr(iPtr),
+        access(accessT), result(resultT) {}
 
-            /** the target address is the underlying address from the
-                LOAD/STORE, not the baseAddr (which is usually he cache line
-                address). For an evict they are the same. */
-            Addr getTargetAddress() const { return targAddr; }
+    /** the target address is the underlying address from the
+        LOAD/STORE, not the baseAddr (which is usually he cache line
+        address). For an evict they are the same. */
+        Addr getTargetAddress() const {return targAddr;}
+	Addr getPhysicalAddress() const { return physAddr; }
+	Addr getVirtualAddress() const { return virtAddr; }
+	Addr getInstructionPointer() const { return instPtr; }
+	NotifyAccessType getAccessType() const { return access; }
+	NotifyResultType getResultType() const { return result; }
+	uint32_t getSize() const { return size; }
+private:
+	uint32_t size;
+        Addr targAddr;
+	Addr physAddr;
+	Addr virtAddr;
+	Addr instPtr;
+	NotifyAccessType access;
+	NotifyResultType result;
+};
 
-            Addr getPhysicalAddress() const { return physAddr; }
+class CacheListener : public SubComponent {
+public:
 
-            Addr getVirtualAddress() const { return virtAddr; }
+    SST_ELI_REGISTER_SUBCOMPONENT_API(SST::MemHierarchy::CacheListener)
 
-            Addr getInstructionPointer() const { return instPtr; }
-
-            NotifyAccessType getAccessType() const { return access; }
-
-            NotifyResultType getResultType() const { return result; }
-
-            uint32_t getSize() const { return size; }
-
-        private:
-            uint32_t size;
-            Addr targAddr;
-            Addr physAddr;
-            Addr virtAddr;
-            Addr instPtr;
-            NotifyAccessType access;
-            NotifyResultType result;
-        };
-
-        class CacheListener : public SubComponent {
-        public:
-
-            SST_ELI_REGISTER_SUBCOMPONENT_API(SST::MemHierarchy::CacheListener)
-
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(CacheListener,
-            "memHierarchy", "emptyCacheListener", SST_ELI_ELEMENT_VERSION(1,0,0),
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(CacheListener, "memHierarchy", "emptyCacheListener", SST_ELI_ELEMENT_VERSION(1,0,0),
             "Empty cache listener", SST::MemHierarchy::CacheListener)
 
-            CacheListener(Component *owner, Params &UNUSED(params)) : SubComponent(
-                owner) {} // Legacy
-            CacheListener(ComponentId_t id, Params &UNUSED(params)) : SubComponent(id) {}
+    CacheListener(ComponentId_t id, Params& UNUSED(params)) : SubComponent(id) {}
+    virtual ~CacheListener() {}
 
-            virtual ~CacheListener() {}
+    virtual void printStats(Output &UNUSED(out)) {}
+    virtual void notifyAccess(const CacheListenerNotification& UNUSED(notify)) {}
+    virtual void registerResponseCallback(Event::HandlerBase *handler) { delete handler; }
+};
 
-            virtual void printStats(Output &UNUSED(out)) {}
-
-            virtual void notifyAccess(const CacheListenerNotification &UNUSED(notify)) {}
-
-            virtual void registerResponseCallback(Event::HandlerBase *handler) { delete handler; }
-        };
-
-    }
-}
+}}
 
 #endif
 

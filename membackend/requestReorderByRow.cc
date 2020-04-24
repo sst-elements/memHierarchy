@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -15,26 +15,18 @@
 
 
 #include <sst/core/sst_config.h>
-#include "util.h"
-#include "membackend/requestReorderByRow.h"
+#include "../util.h"
+#include "requestReorderByRow.h"
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 
 /*------------------------------- Simple Backend ------------------------------- */
-RequestReorderRow::RequestReorderRow(Component *comp, Params &params) : SimpleMemBackend(comp,
-                                                                                         params) {
-    build(params);
-}
+RequestReorderRow::RequestReorderRow(ComponentId_t id, Params &params) : SimpleMemBackend(id, params){ build(params); }
 
-RequestReorderRow::RequestReorderRow(ComponentId_t id, Params &params) : SimpleMemBackend(id,
-                                                                                          params) {
-    build(params);
-}
+void RequestReorderRow::build(Params& params) {
 
-void RequestReorderRow::build(Params &params) {
-
-    fixupParams(params, "clock", "backend.clock");
+    fixupParams( params, "clock", "backend.clock" );
 
     // Get parameters
     reqsPerCycle = params.find<int>("max_issue_per_cycle", -1);
@@ -46,30 +38,20 @@ void RequestReorderRow::build(Params &params) {
 
     // Check parameters
     if (banks == 0) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): banks - must be at least 1. You specified '0'.\n",
-                      getName().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): banks - must be at least 1. You specified '0'.\n", getName().c_str());
     }
     if (!(rowSize.hasUnits("B"))) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): row_size - must have units of 'B' (bytes). You specified %s.\n",
-                      getName().c_str(), rowSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): row_size - must have units of 'B' (bytes). You specified %s.\n", getName().c_str(), rowSize.toString().c_str());
     }
     if (!isPowerOfTwo(rowSize.getRoundedValue())) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): row_size - must be a power of two. You specified %s.\n",
-                      getName().c_str(), rowSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): row_size - must be a power of two. You specified %s.\n", getName().c_str(), rowSize.toString().c_str());
     }
     if (maxReqsPerRow == 0) maxReqsPerRow = 1;
     if (!(requestSize.hasUnits("B"))) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): bank_interleave_granularity - must have units of 'B' (bytes). You specified '%s'.\n",
-                      getName().c_str(), requestSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): bank_interleave_granularity - must have units of 'B' (bytes). You specified '%s'.\n", getName().c_str(), requestSize.toString().c_str());
     }
     if (!isPowerOfTwo(requestSize.getRoundedValue())) {
-        output->fatal(CALL_INFO, -1,
-                      "Invalid param(%s): bank_interleave_granularity - must be a power of two. You specified '%s'.\n",
-                      getName().c_str(), requestSize.toString().c_str());
+        output->fatal(CALL_INFO, -1, "Invalid param(%s): bank_interleave_granularity - must be a power of two. You specified '%s'.\n", getName().c_str(), requestSize.toString().c_str());
     }
 
     // Create our backend & copy 'mem_size' through for now
@@ -78,13 +60,11 @@ void RequestReorderRow::build(Params &params) {
         std::string backendName = params.find<std::string>("backend", "memHierarchy.simpleDRAM");
         Params backendParams = params.find_prefix_params("backend.");
         backendParams.insert("mem_size", params.find<std::string>("mem_size"));
-        backend = loadAnonymousSubComponent<SimpleMemBackend>(backendName, "backend", 0,
-                                                              ComponentInfo::INSERT_STATS |
-                                                              ComponentInfo::SHARE_PORTS,
-                                                              backendParams);
+        backend = loadAnonymousSubComponent<SimpleMemBackend>(backendName, "backend", 0, ComponentInfo::INSERT_STATS | ComponentInfo::SHARE_PORTS, backendParams);
     }
     using std::placeholders::_1;
-    backend->setResponseHandler(std::bind(&RequestReorderRow::handleMemResponse, this, _1));
+    backend->setResponseHandler( std::bind( &RequestReorderRow::handleMemResponse, this, _1 )  );
+    m_memSize = backend->getMemSize(); // inherit from backend
 
     // Set up local variables
     nextBank = 0;
@@ -92,7 +72,7 @@ void RequestReorderRow::build(Params &params) {
     rowOffset = log2Of(rowSize.getRoundedValue());
     lineOffset = log2Of(requestSize.getRoundedValue());
     for (unsigned int i = 0; i < banks; i++) {
-        std::list <Req> *bankList = new std::list<Req>;
+        std::list<Req >* bankList = new std::list<Req>;
         requestQueue.push_back(bankList);
         lastRow.push_back(-1);  // No last request to this bank
         reorderCount.push_back(maxReqsPerRow);  // No requests reordered to this row
@@ -100,17 +80,17 @@ void RequestReorderRow::build(Params &params) {
 
 }
 
-bool RequestReorderRow::issueRequest(ReqId id, Addr addr, bool isWrite, unsigned numBytes) {
+bool RequestReorderRow::issueRequest(ReqId id, Addr addr, bool isWrite, unsigned numBytes ) {
 #ifdef __SST_DEBUG_OUTPUT__
     output->debug(_L10_, "Reorderer received request for 0x%" PRIx64 "\n", (Addr)addr);
 #endif
     int bank = (addr >> lineOffset) & bankMask;
 
-    requestQueue[bank]->push_back(Req(id, addr, isWrite, numBytes));
+    requestQueue[bank]->push_back(Req(id,addr,isWrite,numBytes));
     return true;
 }
 
-/* 
+/*
  * Issue as many requests as we can up to requestsPerCycle
  * by searching up to searchWindowSize requests
  */
@@ -131,14 +111,13 @@ bool RequestReorderRow::clock(Cycle_t cycle) {
             // Decide whether to try to re-order a request to this bank or issue a new row
             bool reorderIssued = false;
             if (reorderCount[bank] != maxReqsPerRow) {
-                std::list <Req> *bankList = requestQueue[bank];
+                std::list<Req>* bankList = requestQueue[bank];
                 for (std::list<Req>::iterator it = bankList->begin(); it != bankList->end(); it++) {
                     unsigned int row = (*it).addr >> rowOffset;
 
                     if (row == lastRow[bank]) {
                         // Attempt issue, if we're blocked, this bank is busy & move to next bank
-                        bool issued = backend->issueRequest((*it).id, (*it).addr, (*it).isWrite,
-                                                            (*it).numBytes);
+                        bool issued = backend->issueRequest((*it).id,(*it).addr,(*it).isWrite,(*it).numBytes);
                         reorderIssued = true;
                         if (issued) {
                             reqsIssuedThisCycle++;
@@ -155,8 +134,8 @@ bool RequestReorderRow::clock(Cycle_t cycle) {
 
             if (!reorderIssued) {
                 // Try to issue oldest request
-                Req &req = *requestQueue[bank]->begin();
-                if (backend->issueRequest(req.id, req.addr, req.isWrite, req.numBytes)) {
+				Req& req = *requestQueue[bank]->begin();
+                if (backend->issueRequest( req.id, req.addr, req.isWrite, req.numBytes ) ) {
                     reqsIssuedThisCycle++;
                     nextBank = (bank + 1) % banks;
                     reorderCount[bank] = 1;

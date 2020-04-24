@@ -1,9 +1,9 @@
 // -*- mode: c++ -*-
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -34,76 +34,68 @@
 
 namespace SST {
 
-    class Component;
+class Component;
+class Event;
 
-    class Event;
-
-    namespace MemHierarchy {
+namespace MemHierarchy {
 
 /** Class is used to interface a compute mode (CPU, GPU) to MemHierarchy Scratchpad */
-        class MemHierarchyScratchInterface : public Interfaces::SimpleMem {
+class MemHierarchyScratchInterface : public Interfaces::SimpleMem {
 
-        public:
+public:
 /* Element Library Info */
-            SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemHierarchyScratchInterface,
-            "memHierarchy", "scratchInterface", SST_ELI_ELEMENT_VERSION(1,0,0),
+    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemHierarchyScratchInterface, "memHierarchy", "scratchInterface", SST_ELI_ELEMENT_VERSION(1,0,0),
             "Interface to a scratchpad", SST::Interfaces::SimpleMem)
 
-            SST_ELI_DOCUMENT_PARAMS( { "scratchpad_size", "Size of the scratchpad, with units" } )
+    SST_ELI_DOCUMENT_PARAMS( { "scratchpad_size", "Size of the scratchpad, with units" } )
 
-            SST_ELI_DOCUMENT_PORTS( { "port", "Port to memory hierarchy (caches/memory/etc.)", {}} )
+    SST_ELI_DOCUMENT_PORTS( {"port", "Port to memory hierarchy (caches/memory/etc.)", {}} )
 
 /* Begin class definition */
-            MemHierarchyScratchInterface(SST::Component *comp, Params &params);
+    MemHierarchyScratchInterface(SST::ComponentId_t id, Params &params, TimeConverter* time, HandlerBase *handler = NULL);
 
-            MemHierarchyScratchInterface(SST::ComponentId_t id, Params &params, TimeConverter *time,
-                                         HandlerBase *handler = NULL);
+    /** Initialize the link to be used to connect with MemHierarchy */
+    virtual bool initialize(const std::string &linkName, HandlerBase *handler = NULL);
 
-            /** Initialize the link to be used to connect with MemHierarchy */
-            virtual bool initialize(const std::string &linkName, HandlerBase *handler = NULL);
+    /** Link getter */
+    virtual SST::Link* getLink(void) const { return link_; }
 
-            /** Link getter */
-            virtual SST::Link *getLink(void) const { return link_; }
+    virtual void init(unsigned int phase);
 
-            virtual void init(unsigned int phase);
+    virtual void sendInitData(Request *req);
+    virtual void sendRequest(Request *req);
+    virtual Request* recvResponse(void);
 
-            virtual void sendInitData(Request *req);
+    Output output;
 
-            virtual void sendRequest(Request *req);
+private:
 
-            virtual Request *recvResponse(void);
+    /** Convert any incoming events to updated Requests, and fire handler */
+    void handleIncoming(SST::Event *ev);
 
-            Output output;
+    /** Process ScratchEvents into updated Requests*/
+    Interfaces::SimpleMem::Request* processIncoming(MemEventBase *ev);
 
-        private:
+    /** Update Request with results of ScratchEvent */
+    void updateRequest(Interfaces::SimpleMem::Request* req, MemEventBase *me) const;
 
-            /** Convert any incoming events to updated Requests, and fire handler */
-            void handleIncoming(SST::Event *ev);
+    /** Function used internally to create the ScratchEvent that will be used by MemHierarchy */
+    MoveEvent* createMoveEvent(Interfaces::SimpleMem::Request* req) const;
+    MemEvent* createMemEvent(Interfaces::SimpleMem::Request* req) const;
 
-            /** Process ScratchEvents into updated Requests*/
-            Interfaces::SimpleMem::Request *processIncoming(MemEventBase *ev);
+    HandlerBase*    recvHandler_;
+    SST::Link*      link_;
+    std::map<SST::Event::id_type, Interfaces::SimpleMem::Request*> requests_;
+    Addr baseAddrMask_;
+    std::string rqstr_;
+    Addr remoteMemStart_;
+    bool allNoncache_;
 
-            /** Update Request with results of ScratchEvent */
-            void updateRequest(Interfaces::SimpleMem::Request *req, MemEventBase *me) const;
+    bool initDone_;
+    std::queue<MemEventInit*> initSendQueue_;
+};
 
-            /** Function used internally to create the ScratchEvent that will be used by MemHierarchy */
-            MoveEvent *createMoveEvent(Interfaces::SimpleMem::Request *req) const;
-
-            MemEvent *createMemEvent(Interfaces::SimpleMem::Request *req) const;
-
-            HandlerBase *recvHandler_;
-            SST::Link *link_;
-            std::map<SST::Event::id_type, Interfaces::SimpleMem::Request *> requests_;
-            Addr baseAddrMask_;
-            std::string rqstr_;
-            Addr remoteMemStart_;
-            bool allNoncache_;
-
-            bool initDone_;
-            std::queue<MemEventInit *> initSendQueue_;
-        };
-
-    }
+}
 }
 
 #endif

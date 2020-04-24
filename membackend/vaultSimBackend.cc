@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2019, NTESS
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -16,34 +16,27 @@
 
 #include <sst/core/sst_config.h>
 #include <sst/core/link.h>
-#include "util.h"
-#include "membackend/vaultSimBackend.h"
-#include "memReqEvent.h"
+#include "../util.h"
+#include "vaultSimBackend.h"
+#include "sst/elements/VaultSimC/memReqEvent.h"
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 using namespace SST::VaultSim;
 
-VaultSimMemory::VaultSimMemory(Component *comp, Params &params) : FlagMemBackend(comp, params) {
-    build(params);
-}
+VaultSimMemory::VaultSimMemory(ComponentId_t id, Params &params) : FlagMemBackend(id, params){ build(params); }
 
-VaultSimMemory::VaultSimMemory(ComponentId_t id, Params &params) : FlagMemBackend(id, params) {
-    build(params);
-}
-
-void VaultSimMemory::build(Params &params) {
+void VaultSimMemory::build(Params& params) {
     std::string access_time = params.find<std::string>("access_time", "100 ns");
-    cube_link = configureLink("cube_link", access_time,
-                              new Event::Handler<VaultSimMemory>(this,
-                                                                 &VaultSimMemory::handleCubeEvent));
+    cube_link = configureLink( "cube_link", access_time,
+            new Event::Handler<VaultSimMemory>(this, &VaultSimMemory::handleCubeEvent));
 
     output->init("VaultSimMemory[@p:@l]: ", 10, 0, Output::STDOUT);
 }
 
 
-bool VaultSimMemory::issueRequest(ReqId reqId, Addr addr, bool isWrite, uint32_t flags,
-                                  unsigned numBytes) {
+
+bool VaultSimMemory::issueRequest(ReqId reqId, Addr addr, bool isWrite, uint32_t flags, unsigned numBytes ){
 #ifdef __SST_DEBUG_OUTPUT__
     output->debug(_L10_, "Issued transaction to Cube Chain for address %" PRIx64 "\n", (Addr)addr);
 #endif
@@ -55,23 +48,23 @@ bool VaultSimMemory::issueRequest(ReqId reqId, Addr addr, bool isWrite, uint32_t
     if (outToCubes.find(reqId) != outToCubes.end())
         output->fatal(CALL_INFO, -1, "Assertion failed");
 
-    outToCubes.insert(reqId);
-    cube_link->send(new VaultSim::MemReqEvent(reqId, addr, isWrite, numBytes, flags));
+    outToCubes.insert( reqId );
+    cube_link->send( new VaultSim::MemReqEvent(reqId,addr,isWrite,numBytes,flags) );
     return true;
 }
 
 
-void VaultSimMemory::handleCubeEvent(SST::Event *event) {
-    VaultSim::MemRespEvent *ev = dynamic_cast<VaultSim::MemRespEvent *>(event);
+void VaultSimMemory::handleCubeEvent(SST::Event *event){
+    VaultSim::MemRespEvent *ev = dynamic_cast<VaultSim::MemRespEvent*>(event);
 
     if (ev) {
-        if (outToCubes.find(ev->getReqId()) != outToCubes.end()) {
-            outToCubes.erase(ev->getReqId());
-            handleMemResponse(ev->getReqId(), ev->getFlags());
-            delete event;
+        if ( outToCubes.find( ev->getReqId() ) != outToCubes.end() ) {
+            outToCubes.erase( ev->getReqId() );
+            handleMemResponse( ev->getReqId(), ev->getFlags() );
+      		delete event;
         } else {
             output->fatal(CALL_INFO, -1, "Could not match incoming request from cubes\n");
-        }
+		}
     } else {
         output->fatal(CALL_INFO, -1, "Recived wrong event type from cubes\n");
     }
