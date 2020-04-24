@@ -18,49 +18,49 @@
 #ifndef NETWORKMEMINSECTOR_H_
 #define NETWORKMEMINSECTOR_H_
 
-#include <sst/core/output.h>
 #include <sst/core/interfaces/simpleNetwork.h>
+#include <sst/core/output.h>
 
-#include "memTypes.h"
 #include "memEvent.h"
+#include "memTypes.h"
 
 using namespace SST;
 using namespace SST::Interfaces;
 
-namespace SST { namespace MemHierarchy {
+namespace SST {
+namespace MemHierarchy {
 
 class networkMemInspector : public SimpleNetwork::NetworkInspector {
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(
-        networkMemInspector,
-        "memHierarchy",
-        "networkMemoryInspector",
-        SST_ELI_ELEMENT_VERSION(1,0,0),
-        "Used to classify memory traffic going through a network router",
-        SST::Interfaces::SimpleNetwork::NetworkInspector
-    )
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(
+      networkMemInspector, "memHierarchy", "networkMemoryInspector",
+      SST_ELI_ELEMENT_VERSION(1, 0, 0),
+      "Used to classify memory traffic going through a network router",
+      SST::Interfaces::SimpleNetwork::NetworkInspector)
 
-    SST_ELI_DOCUMENT_STATISTICS( networkMemoryInspector_statistics ) // Defined in memTypes.h via x macro
+  SST_ELI_DOCUMENT_STATISTICS(
+      networkMemoryInspector_statistics) // Defined in memTypes.h via x macro
 
 /* Begin class definition */
-#ifndef SST_ENABLE_PREVIEW_BUILD  // inserted by script
-    networkMemInspector(Component *parent, Params &params);
-#endif  // inserted by script
-    networkMemInspector(ComponentId_t, Params &params, const std::string& sub_id);
+#ifndef SST_ENABLE_PREVIEW_BUILD // inserted by script
+  networkMemInspector(Component *parent, Params &params);
+#endif // inserted by script
+  networkMemInspector(ComponentId_t, Params &params, const std::string &sub_id);
 
-    virtual ~networkMemInspector() {}
+  virtual ~networkMemInspector() {}
 
-    virtual void inspectNetworkData(SimpleNetwork::Request* req);
+  virtual void inspectNetworkData(SimpleNetwork::Request *req);
 
 #ifndef SST_ENABLE_PREVIEW_BUILD
-    virtual void initialize(std::string id);
+  virtual void initialize(std::string id);
 #endif
-    Output dbg;
-    // statistics
-    Statistic<uint64_t>*  memCmdStat[(int)Command::LAST_CMD];
+  Output dbg;
+  // statistics
+  Statistic<uint64_t> *memCmdStat[(int)Command::LAST_CMD];
 };
 
-}}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif /* NETWORKMEMINSECTOR_H_ */

@@ -13,42 +13,52 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
-#include <sst/core/sst_config.h>
-#include "../util.h"
 #include "requestReorderSimple.h"
+#include "../util.h"
+#include <sst/core/sst_config.h>
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 
-/*------------------------------- Simple Backend ------------------------------- */
-RequestReorderSimple::RequestReorderSimple(ComponentId_t id, Params &params) : SimpleMemBackend(id, params){ build(params); }
-
-void RequestReorderSimple::build(Params& params) {
-    fixupParams( params, "clock", "backend.clock" );
-
-    reqsPerCycle = params.find<int>("max_issue_per_cycle", -1);
-    searchWindowSize = params.find<int>("search_window_size", -1);
-
-    // Create our backend & copy 'mem_size' through for now
-    backend = loadUserSubComponent<SimpleMemBackend>("backend");
-    if (!backend) {
-        std::string backendName = params.find<std::string>("backend", "memHierarchy.simpleDRAM");
-        Params backendParams = params.find_prefix_params("backend.");
-        backendParams.insert("mem_size", params.find<std::string>("mem_size"));
-        backend = loadAnonymousSubComponent<SimpleMemBackend>(backendName, "backend", 0, ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS, backendParams);
-    }
-    using std::placeholders::_1;
-    backend->setResponseHandler( std::bind( &RequestReorderSimple::handleMemResponse, this, _1 )  );
-    m_memSize = backend->getMemSize(); // inherit from backend
+/*------------------------------- Simple Backend -------------------------------
+ */
+RequestReorderSimple::RequestReorderSimple(ComponentId_t id, Params &params)
+    : SimpleMemBackend(id, params) {
+  build(params);
 }
 
-bool RequestReorderSimple::issueRequest(ReqId id, Addr addr, bool isWrite, unsigned numBytes ) {
+void RequestReorderSimple::build(Params &params) {
+  fixupParams(params, "clock", "backend.clock");
+
+  reqsPerCycle = params.find<int>("max_issue_per_cycle", -1);
+  searchWindowSize = params.find<int>("search_window_size", -1);
+
+  // Create our backend & copy 'mem_size' through for now
+  backend = loadUserSubComponent<SimpleMemBackend>("backend");
+  if (!backend) {
+    std::string backendName =
+        params.find<std::string>("backend", "memHierarchy.simpleDRAM");
+    Params backendParams = params.find_prefix_params("backend.");
+    backendParams.insert("mem_size", params.find<std::string>("mem_size"));
+    backend = loadAnonymousSubComponent<SimpleMemBackend>(
+        backendName, "backend", 0,
+        ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS,
+        backendParams);
+  }
+  using std::placeholders::_1;
+  backend->setResponseHandler(
+      std::bind(&RequestReorderSimple::handleMemResponse, this, _1));
+  m_memSize = backend->getMemSize(); // inherit from backend
+}
+
+bool RequestReorderSimple::issueRequest(ReqId id, Addr addr, bool isWrite,
+                                        unsigned numBytes) {
 #ifdef __SST_DEBUG_OUTPUT__
-    output->debug(_L10_, "Reorderer received request for 0x%" PRIx64 "\n", (Addr)addr);
+  output->debug(_L10_, "Reorderer received request for 0x%" PRIx64 "\n",
+                (Addr)addr);
 #endif
-    requestQueue.push_back(Req(id,addr,isWrite,numBytes));
-    return true;
+  requestQueue.push_back(Req(id, addr, isWrite, numBytes));
+  return true;
 }
 
 /*
@@ -57,49 +67,48 @@ bool RequestReorderSimple::issueRequest(ReqId id, Addr addr, bool isWrite, unsig
  */
 bool RequestReorderSimple::clock(Cycle_t cycle) {
 
-    if (!requestQueue.empty()) {
+  if (!requestQueue.empty()) {
 
-        int reqsIssuedThisCycle = 0;
-        int reqsSearchedThisCycle = 0;
+    int reqsIssuedThisCycle = 0;
+    int reqsSearchedThisCycle = 0;
 
-        std::list<Req>::iterator it = requestQueue.begin();
+    std::list<Req>::iterator it = requestQueue.begin();
 
-        while (it != requestQueue.end()) {
+    while (it != requestQueue.end()) {
 
-            bool issued = backend->issueRequest( (*it).id, (*it).addr, (*it).isWrite, (*it).numBytes );
+      bool issued = backend->issueRequest((*it).id, (*it).addr, (*it).isWrite,
+                                          (*it).numBytes);
 
-            if (issued) {
+      if (issued) {
 #ifdef __SST_DEBUG_OUTPUT__
-    output->debug(_L10_, "Reorderer issued request for 0x%" PRIx64 "\n", (Addr)(*it).addr);
+        output->debug(_L10_, "Reorderer issued request for 0x%" PRIx64 "\n",
+                      (Addr)(*it).addr);
 #endif
-                reqsIssuedThisCycle++;
-                it = requestQueue.erase(it);
-                if (reqsIssuedThisCycle == reqsPerCycle) break;
-            } else {
+        reqsIssuedThisCycle++;
+        it = requestQueue.erase(it);
+        if (reqsIssuedThisCycle == reqsPerCycle)
+          break;
+      } else {
 #ifdef __SST_DEBUG_OUTPUT__
-    output->debug(_L10_, "Reorderer could not issue 0x%" PRIx64 "\n", (Addr)(*it).addr);
+        output->debug(_L10_, "Reorderer could not issue 0x%" PRIx64 "\n",
+                      (Addr)(*it).addr);
 #endif
-                it++;
-            }
+        it++;
+      }
 
-            reqsSearchedThisCycle++;
-            if (reqsSearchedThisCycle == searchWindowSize) break;
-        }
+      reqsSearchedThisCycle++;
+      if (reqsSearchedThisCycle == searchWindowSize)
+        break;
     }
-    bool unclock = backend->clock(cycle);
-    return false;
+  }
+  bool unclock = backend->clock(cycle);
+  return false;
 }
-
 
 /*
  * Call throughs to our backend
  */
 
-void RequestReorderSimple::setup() {
-    backend->setup();
-}
+void RequestReorderSimple::setup() { backend->setup(); }
 
-void RequestReorderSimple::finish() {
-    backend->finish();
-}
-
+void RequestReorderSimple::finish() { backend->finish(); }

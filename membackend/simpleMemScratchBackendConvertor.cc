@@ -13,24 +13,24 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
-#include <sst/core/sst_config.h>
-#include <sst/core/params.h>
-#include "../util.h"
 #include "simpleMemScratchBackendConvertor.h"
+#include "../util.h"
 #include "memBackend.h"
+#include <sst/core/params.h>
+#include <sst/core/sst_config.h>
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 
-
-SimpleMemScratchBackendConvertor::SimpleMemScratchBackendConvertor(ComponentId_t id, Params &params) :
-        ScratchBackendConvertor(id, params)
-{
-    using std::placeholders::_1;
-    static_cast<SimpleMemBackend*>(m_backend)->setResponseHandler( std::bind( &SimpleMemScratchBackendConvertor::handleMemResponse, this, _1 ) );
+SimpleMemScratchBackendConvertor::SimpleMemScratchBackendConvertor(
+    ComponentId_t id, Params &params)
+    : ScratchBackendConvertor(id, params) {
+  using std::placeholders::_1;
+  static_cast<SimpleMemBackend *>(m_backend)->setResponseHandler(std::bind(
+      &SimpleMemScratchBackendConvertor::handleMemResponse, this, _1));
 }
 
-bool SimpleMemScratchBackendConvertor::issue( MemReq* req ) {
-    return static_cast<SimpleMemBackend*>(m_backend)->issueRequest( req->id(), req->addr(), req->isWrite(), m_backendRequestWidth );
+bool SimpleMemScratchBackendConvertor::issue(MemReq *req) {
+  return static_cast<SimpleMemBackend *>(m_backend)->issueRequest(
+      req->id(), req->addr(), req->isWrite(), m_backendRequestWidth);
 }

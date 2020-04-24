@@ -22,10 +22,10 @@ namespace SST {
 namespace MemHierarchy {
 
 class MemResponseHandler {
-	virtual void handleMemResponse(DRAMReq *req) = 0;
+  virtual void handleMemResponse(DRAMReq *req) = 0;
 };
 
-}
-}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

@@ -46,3 +46,4 @@ sed -i "s/\"memTypes.h\"/\"..\/memTypes.h\"/g" coherencemgr/MESI_L1.h
 
 sed -i "s/<networkMemInspector.h>/\"networkMemInspector.h\"/g" networkMemInspector.cc
 sed -i "s/<memNIC.h>/\"memNIC.h\"/g" networkMemInspector.cc
+sed -i "s/<goblinHMCBackend.h>/\"goblinHMCBackend.h\"/g" membackend/goblinHMCBackend.cc

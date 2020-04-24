@@ -13,41 +13,48 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
-#include <sst/core/sst_config.h>
-#include <sst/core/link.h>
-#include "../util.h"
 #include "simpleMemBackend.h"
+#include "../util.h"
 #include "simpleMemBackendConvertor.h"
+#include <sst/core/link.h>
+#include <sst/core/sst_config.h>
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 
-/*------------------------------- Simple Backend ------------------------------- */
-SimpleMemory::SimpleMemory(ComponentId_t id, Params &params) : SimpleMemBackend(id, params){ build(params); }
-
-void SimpleMemory::build(Params& params) {
-    std::string access_time = params.find<std::string>("access_time", "100 ns");
-    self_link = configureSelfLink("Self", access_time,
-            new Event::Handler<SimpleMemory>(this, &SimpleMemory::handleSelfEvent));
-
-    m_maxReqPerCycle = params.find<>("max_requests_per_cycle", 1);
+/*------------------------------- Simple Backend -------------------------------
+ */
+SimpleMemory::SimpleMemory(ComponentId_t id, Params &params)
+    : SimpleMemBackend(id, params) {
+  build(params);
 }
 
-void SimpleMemory::handleSelfEvent(SST::Event *event){
-    MemCtrlEvent *ev = static_cast<MemCtrlEvent*>(event);
+void SimpleMemory::build(Params &params) {
+  std::string access_time = params.find<std::string>("access_time", "100 ns");
+  self_link = configureSelfLink(
+      "Self", access_time,
+      new Event::Handler<SimpleMemory>(this, &SimpleMemory::handleSelfEvent));
+
+  m_maxReqPerCycle = params.find<>("max_requests_per_cycle", 1);
+}
+
+void SimpleMemory::handleSelfEvent(SST::Event *event) {
+  MemCtrlEvent *ev = static_cast<MemCtrlEvent *>(event);
 #ifdef __SST_DEBUG_OUTPUT__
-    output->debug(_L10_, "%s: Transaction done for id %" PRIx64 "\n", getName().c_str(),ev->reqId);
+  output->debug(_L10_, "%s: Transaction done for id %" PRIx64 "\n",
+                getName().c_str(), ev->reqId);
 #endif
-    handleMemResponse(ev->reqId);
-    delete event;
+  handleMemResponse(ev->reqId);
+  delete event;
 }
 
-bool SimpleMemory::issueRequest(ReqId id, Addr addr, bool isWrite, unsigned numBytes ){
+bool SimpleMemory::issueRequest(ReqId id, Addr addr, bool isWrite,
+                                unsigned numBytes) {
 #ifdef __SST_DEBUG_OUTPUT__
-    output->debug(_L10_, "%s: Issued transaction for address %" PRIx64 " id %" PRIx64"\n", getName().c_str(),(Addr)addr,id);
+  output->debug(
+      _L10_, "%s: Issued transaction for address %" PRIx64 " id %" PRIx64 "\n",
+      getName().c_str(), (Addr)addr, id);
 #endif
-    self_link->send(1, new MemCtrlEvent(id));
-    return true;
+  self_link->send(1, new MemCtrlEvent(id));
+  return true;
 }
-

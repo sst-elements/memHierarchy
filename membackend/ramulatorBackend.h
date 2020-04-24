@@ -13,7 +13,6 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
 #ifndef _H_SST_MEMH_RAMULATOR_BACKEND
 #define _H_SST_MEMH_RAMULATOR_BACKEND
 
@@ -31,37 +30,42 @@ namespace MemHierarchy {
 
 class ramulatorMemory : public SimpleMemBackend {
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(ramulatorMemory, "memHierarchy", "ramulator", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "Ramulator-driven memory timings", SST::MemHierarchy::SimpleMemBackend)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(ramulatorMemory, "memHierarchy",
+                                        "ramulator",
+                                        SST_ELI_ELEMENT_VERSION(1, 0, 0),
+                                        "Ramulator-driven memory timings",
+                                        SST::MemHierarchy::SimpleMemBackend)
 
-    SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
-            /* Own parameters */
-            {"verbose",     "Sets the verbosity of the backend output", "0"},
-            {"configFile",  "Name of the Ramulator Device config file", NULL} )
+  SST_ELI_DOCUMENT_PARAMS(MEMBACKEND_ELI_PARAMS,
+                          /* Own parameters */
+                          {"verbose",
+                           "Sets the verbosity of the backend output", "0"},
+                          {"configFile",
+                           "Name of the Ramulator Device config file", NULL})
 
-/* Begin class definition */
-    ramulatorMemory(ComponentId_t id, Params &params);
-    bool issueRequest(ReqId, Addr, bool, unsigned );
-    //virtual bool issueRequest(DRAMReq *req);
-    virtual bool clock(Cycle_t cycle);
-    virtual void finish();
+  /* Begin class definition */
+  ramulatorMemory(ComponentId_t id, Params &params);
+  bool issueRequest(ReqId, Addr, bool, unsigned);
+  // virtual bool issueRequest(DRAMReq *req);
+  virtual bool clock(Cycle_t cycle);
+  virtual void finish();
 
 protected:
-    ramulator::Gem5Wrapper *memSystem;
-    std::function<void(ramulator::Request&)> callBackFunc;
+  ramulator::Gem5Wrapper *memSystem;
+  std::function<void(ramulator::Request &)> callBackFunc;
 
-    // Track outstanding requests
-    std::map<uint64_t, std::deque<ReqId> > dramReqs;
-    std::set<ReqId> writes;
+  // Track outstanding requests
+  std::map<uint64_t, std::deque<ReqId>> dramReqs;
+  std::set<ReqId> writes;
 
-    void ramulatorDone(ramulator::Request& req);
+  void ramulatorDone(ramulator::Request &req);
 
 private:
-    void build(Params& params);
+  void build(Params &params);
 };
 
-}
-}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

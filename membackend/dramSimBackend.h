@@ -13,7 +13,6 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
 #ifndef _H_SST_MEMH_DRAMSIM_BACKEND
 #define _H_SST_MEMH_DRAMSIM_BACKEND
 
@@ -36,36 +35,39 @@ namespace MemHierarchy {
 
 class DRAMSimMemory : public SimpleMemBackend {
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(DRAMSimMemory, "memHierarchy", "dramsim", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "DRAMSim-driven memory timings", SST::MemHierarchy::SimpleMemBackend)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(DRAMSimMemory, "memHierarchy",
+                                        "dramsim",
+                                        SST_ELI_ELEMENT_VERSION(1, 0, 0),
+                                        "DRAMSim-driven memory timings",
+                                        SST::MemHierarchy::SimpleMemBackend)
 
-#define DRAMSIM_ELI_PARAMS MEMBACKEND_ELI_PARAMS,\
-            /* Own parameters */\
-            {"verbose",     "Sets the verbosity of the backend output", "0"},\
-            {"device_ini",  "Name of the DRAMSim Device config file",   NULL},\
-            {"system_ini",  "Name of the DRAMSim Device system file",   NULL}
+#define DRAMSIM_ELI_PARAMS                                                     \
+  MEMBACKEND_ELI_PARAMS, /* Own parameters */                                  \
+      {"verbose", "Sets the verbosity of the backend output", "0"},            \
+      {"device_ini", "Name of the DRAMSim Device config file", NULL},          \
+      {"system_ini", "Name of the DRAMSim Device system file", NULL}
 
-    SST_ELI_DOCUMENT_PARAMS( DRAMSIM_ELI_PARAMS )
+  SST_ELI_DOCUMENT_PARAMS(DRAMSIM_ELI_PARAMS)
 
-/* Begin class definition */
-    DRAMSimMemory(ComponentId_t id, Params &params);
+  /* Begin class definition */
+  DRAMSimMemory(ComponentId_t id, Params &params);
 
-    virtual bool issueRequest(ReqId, Addr, bool, unsigned );
-    virtual bool clock(Cycle_t cycle);
-    virtual void finish();
+  virtual bool issueRequest(ReqId, Addr, bool, unsigned);
+  virtual bool clock(Cycle_t cycle);
+  virtual void finish();
 
 protected:
-    void dramSimDone(unsigned int id, uint64_t addr, uint64_t clockcycle);
+  void dramSimDone(unsigned int id, uint64_t addr, uint64_t clockcycle);
 
-    DRAMSim::MultiChannelMemorySystem *memSystem;
-    std::map<uint64_t, std::deque<ReqId> > dramReqs;
+  DRAMSim::MultiChannelMemorySystem *memSystem;
+  std::map<uint64_t, std::deque<ReqId>> dramReqs;
 
 private:
-    void build(Params& params);
+  void build(Params &params);
 };
 
-}
-}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

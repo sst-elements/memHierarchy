@@ -13,57 +13,54 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
+#include "extMemBackendConvertor.h"
+#include "../customcmd/customOpCodeCmd.h"
+#include "../memoryController.h"
+#include "../util.h"
+#include "memBackend.h"
 #include <sst/core/sst_config.h>
 #include <vector>
-#include "../util.h"
-#include "../memoryController.h"
-#include "extMemBackendConvertor.h"
-#include "memBackend.h"
-#include "../customcmd/customOpCodeCmd.h"
 
 using namespace SST;
 using namespace SST::MemHierarchy;
 
 #ifdef __SST_DEBUG_OUTPUT__
-#define Debug(level, fmt, ... ) m_dbg.debug( level, fmt, ##__VA_ARGS__  )
+#define Debug(level, fmt, ...) m_dbg.debug(level, fmt, ##__VA_ARGS__)
 #else
-#define Debug(level, fmt, ... )
+#define Debug(level, fmt, ...)
 #endif
 
-
-ExtMemBackendConvertor::ExtMemBackendConvertor(ComponentId_t id, Params &params, MemBackend * backend, uint32_t reqWidth) :
-    MemBackendConvertor(id, params, backend, reqWidth)
-{
-    using std::placeholders::_1;
-    using std::placeholders::_2;
-    static_cast<ExtMemBackend*>(m_backend)->setResponseHandler( std::bind( &ExtMemBackendConvertor::handleMemResponse, this, _1,_2 ) );
+ExtMemBackendConvertor::ExtMemBackendConvertor(ComponentId_t id, Params &params,
+                                               MemBackend *backend,
+                                               uint32_t reqWidth)
+    : MemBackendConvertor(id, params, backend, reqWidth) {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  static_cast<ExtMemBackend *>(m_backend)->setResponseHandler(
+      std::bind(&ExtMemBackendConvertor::handleMemResponse, this, _1, _2));
 }
 
-bool ExtMemBackendConvertor::issue( BaseReq *req ) {
+bool ExtMemBackendConvertor::issue(BaseReq *req) {
 
-    std::vector<uint64_t> NULLVEC;
+  std::vector<uint64_t> NULLVEC;
 
-    if( req->isCustCmd() ){
-      // issue custom request
-      CustomReq * mreq = static_cast<CustomReq*>(req);
-      CustomOpCodeCmdInfo *info = static_cast<CustomOpCodeCmdInfo*>(mreq->getInfo());
-      return static_cast<ExtMemBackend*>(m_backend)->issueCustomRequest( mreq->id(),
-                                                                         info->getAddr(),
-                                                                         info->getOpCode(),
-                                                                         NULLVEC, // this is null for normal requests
-                                                                         info->getFlags(),
-                                                                         m_backendRequestWidth );
-    }else{
-      // issue standard request
-      MemReq * mreq = static_cast<MemReq*>(req);
-      return static_cast<ExtMemBackend*>(m_backend)->issueRequest( mreq->id(),
-                                                                   mreq->addr(),
-                                                                   mreq->isWrite(),
-                                                                   NULLVEC, // this is null for normal requests
-                                                                   mreq->getMemEvent()->getFlags(),
-                                                                   m_backendRequestWidth );
-    }
+  if (req->isCustCmd()) {
+    // issue custom request
+    CustomReq *mreq = static_cast<CustomReq *>(req);
+    CustomOpCodeCmdInfo *info =
+        static_cast<CustomOpCodeCmdInfo *>(mreq->getInfo());
+    return static_cast<ExtMemBackend *>(m_backend)->issueCustomRequest(
+        mreq->id(), info->getAddr(), info->getOpCode(),
+        NULLVEC, // this is null for normal requests
+        info->getFlags(), m_backendRequestWidth);
+  } else {
+    // issue standard request
+    MemReq *mreq = static_cast<MemReq *>(req);
+    return static_cast<ExtMemBackend *>(m_backend)->issueRequest(
+        mreq->id(), mreq->addr(), mreq->isWrite(),
+        NULLVEC, // this is null for normal requests
+        mreq->getMemEvent()->getFlags(), m_backendRequestWidth);
+  }
 }
 
 // EOF

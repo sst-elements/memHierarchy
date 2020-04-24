@@ -16,20 +16,20 @@
 #ifndef _MEMHIERARCHY_MEMLINK_H_
 #define _MEMHIERARCHY_MEMLINK_H_
 
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <queue>
 
 #include <sst/core/event.h>
-#include <sst/core/output.h>
 #include <sst/core/link.h>
+#include <sst/core/output.h>
 
-#include "memEventBase.h"
 #include "memEvent.h"
-#include "util.h"
-#include "memTypes.h"
+#include "memEventBase.h"
 #include "memLinkBase.h"
+#include "memTypes.h"
+#include "util.h"
 
 namespace SST {
 namespace MemHierarchy {
@@ -42,91 +42,103 @@ namespace MemHierarchy {
 class MemLink : public MemLinkBase {
 
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemLink, "memHierarchy", "MemLink", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "Memory-oriented link interface", SST::MemHierarchy::MemLinkBase)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemLink, "memHierarchy", "MemLink",
+                                        SST_ELI_ELEMENT_VERSION(1, 0, 0),
+                                        "Memory-oriented link interface",
+                                        SST::MemHierarchy::MemLinkBase)
 
-    /* Define params, inherit from base class */
-#define MEMLINK_ELI_PARAMS MEMLINKBASE_ELI_PARAMS, \
-    { "latency",            "(string) Link latency. Prefix 'cpulink' for up-link towards CPU or 'memlink' for down-link towards memory", "50ps"},\
-    { "port",               "(string) Set by parent component. Name of port this memLink sits on.", "port"}
+  /* Define params, inherit from base class */
+#define MEMLINK_ELI_PARAMS                                                     \
+  MEMLINKBASE_ELI_PARAMS,                                                      \
+      {"latency",                                                              \
+       "(string) Link latency. Prefix 'cpulink' for up-link towards CPU or "   \
+       "'memlink' for down-link towards memory",                               \
+       "50ps"},                                                                \
+      {"port",                                                                 \
+       "(string) Set by parent component. Name of port this memLink sits on.", \
+       "port"}
 
-    SST_ELI_DOCUMENT_PARAMS( { MEMLINK_ELI_PARAMS }  )
+  SST_ELI_DOCUMENT_PARAMS({MEMLINK_ELI_PARAMS})
 
-    SST_ELI_DOCUMENT_PORTS( { "port", "Port to another memory component", {"memHierarchy.MemEventBase"} } )
+  SST_ELI_DOCUMENT_PORTS({"port",
+                          "Port to another memory component",
+                          {"memHierarchy.MemEventBase"}})
 
-/* Begin class definition */
-    class MemEventLinkInit : public MemEventBase {
-        public:
-            MemEventLinkInit(std::string src, MemRegion region) : MemEventBase(src, Command::NULLCMD), region(region) { }
+  /* Begin class definition */
+  class MemEventLinkInit : public MemEventBase {
+  public:
+    MemEventLinkInit(std::string src, MemRegion region)
+        : MemEventBase(src, Command::NULLCMD), region(region) {}
 
-            MemRegion getRegion() { return region; }
-            void setRegion(MemRegion reg) { region = reg; }
+    MemRegion getRegion() { return region; }
+    void setRegion(MemRegion reg) { region = reg; }
 
-            virtual MemEventLinkInit* clone(void) override {
-                return new MemEventLinkInit(*this);
-            }
-
-            virtual std::string getVerboseString() override {
-                std::ostringstream str;
-                str << "Start: " << region.start << " End: " << region.end;
-                str << " Step: " << region.interleaveStep << " Size: " << region.interleaveSize;
-                return MemEventBase::getVerboseString() + str.str();
-            }
-
-            virtual std::string getBriefString() override {
-                std::ostringstream str;
-                str << "Start: " << region.start << " End: " << region.end;
-                str << " Step: " << region.interleaveStep << " Size: " << region.interleaveSize;
-                return MemEventBase::getBriefString() + str.str();
-            }
-
-        private:
-            MemRegion region;
-
-    };
-
-    /* Constructor */
-    MemLink(ComponentId_t id, Params &params);
-
-    /* Destructor */
-    virtual ~MemLink() { }
-
-    /* Initialization functions for parent */
-    virtual void init(unsigned int phase);
-
-    /* Remote endpoint info management */
-    virtual std::set<EndpointInfo>* getSources();
-    virtual std::set<EndpointInfo>* getDests();
-    virtual bool isDest(std::string UNUSED(str));
-    virtual bool isSource(std::string UNUSED(str));
-    virtual std::string findTargetDestination(Addr addr);
-
-    /* Send and receive functions for MemLink */
-    virtual void sendInitData(MemEventInit * ev);
-    virtual MemEventInit* recvInitData();
-    virtual void send(MemEventBase * ev);
-    virtual MemEventBase * recv();
-
-    /* Debug */
-    virtual void printStatus(Output &out) {
-        out.output("  MemHierarchy::MemLink: No status given\n");
+    virtual MemEventLinkInit *clone(void) override {
+      return new MemEventLinkInit(*this);
     }
 
+    virtual std::string getVerboseString() override {
+      std::ostringstream str;
+      str << "Start: " << region.start << " End: " << region.end;
+      str << " Step: " << region.interleaveStep
+          << " Size: " << region.interleaveSize;
+      return MemEventBase::getVerboseString() + str.str();
+    }
+
+    virtual std::string getBriefString() override {
+      std::ostringstream str;
+      str << "Start: " << region.start << " End: " << region.end;
+      str << " Step: " << region.interleaveStep
+          << " Size: " << region.interleaveSize;
+      return MemEventBase::getBriefString() + str.str();
+    }
+
+  private:
+    MemRegion region;
+  };
+
+  /* Constructor */
+  MemLink(ComponentId_t id, Params &params);
+
+  /* Destructor */
+  virtual ~MemLink() {}
+
+  /* Initialization functions for parent */
+  virtual void init(unsigned int phase);
+
+  /* Remote endpoint info management */
+  virtual std::set<EndpointInfo> *getSources();
+  virtual std::set<EndpointInfo> *getDests();
+  virtual bool isDest(std::string UNUSED(str));
+  virtual bool isSource(std::string UNUSED(str));
+  virtual std::string findTargetDestination(Addr addr);
+
+  /* Send and receive functions for MemLink */
+  virtual void sendInitData(MemEventInit *ev);
+  virtual MemEventInit *recvInitData();
+  virtual void send(MemEventBase *ev);
+  virtual MemEventBase *recv();
+
+  /* Debug */
+  virtual void printStatus(Output &out) {
+    out.output("  MemHierarchy::MemLink: No status given\n");
+  }
+
 protected:
-    void addRemote(EndpointInfo info);
+  void addRemote(EndpointInfo info);
 
-    // Link
-    SST::Link* link;
+  // Link
+  SST::Link *link;
 
-    // Data structures
-    std::set<EndpointInfo> remotes;
+  // Data structures
+  std::set<EndpointInfo> remotes;
 
 private:
-    void build(Params &params);
+  void build(Params &params);
 };
 
-} //namespace memHierarchy
-} //namespace SST
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

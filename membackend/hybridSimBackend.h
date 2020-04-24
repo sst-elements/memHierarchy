@@ -13,7 +13,6 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
 #ifndef _H_SST_MEMH_HYBRIDSIM_BACKEND
 #define _H_SST_MEMH_HYBRIDSIM_BACKEND
 
@@ -36,30 +35,35 @@ namespace MemHierarchy {
 
 class HybridSimMemory : public SimpleMemBackend {
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(HybridSimMemory, "memHierarchy", "hybridsim", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "HybridSim-driven memory timings", SST::MemHierarchy::SimpleMemBackend)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(HybridSimMemory, "memHierarchy",
+                                        "hybridsim",
+                                        SST_ELI_ELEMENT_VERSION(1, 0, 0),
+                                        "HybridSim-driven memory timings",
+                                        SST::MemHierarchy::SimpleMemBackend)
 
-    SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
-            /* Own parameters */
-            {"verbose", "Sets the verbosity of the backend output", "0"},
-            {"device_ini", "Name of the HybridSim Device config file", NULL},
-            {"system_ini", "Name of the HybridSim Device system file", NULL} )
+  SST_ELI_DOCUMENT_PARAMS(
+      MEMBACKEND_ELI_PARAMS,
+      /* Own parameters */
+      {"verbose", "Sets the verbosity of the backend output", "0"},
+      {"device_ini", "Name of the HybridSim Device config file", NULL},
+      {"system_ini", "Name of the HybridSim Device system file", NULL})
 
-/* Begin class definition */
-    HybridSimMemory(ComponentId_t id, Params &params);
-    bool issueRequest( ReqId, Addr, bool, unsigned );
-    bool clock(Cycle_t cycle);
-    void finish();
+  /* Begin class definition */
+  HybridSimMemory(ComponentId_t id, Params &params);
+  bool issueRequest(ReqId, Addr, bool, unsigned);
+  bool clock(Cycle_t cycle);
+  void finish();
+
 private:
-    void build(Params& params);
-    void hybridSimDone(unsigned int id, uint64_t addr, uint64_t clockcycle);
+  void build(Params &params);
+  void hybridSimDone(unsigned int id, uint64_t addr, uint64_t clockcycle);
 
-    HybridSim::HybridSystem *memSystem;
-    std::map<uint64_t, std::deque<ReqId> > dramReqs;
+  HybridSim::HybridSystem *memSystem;
+  std::map<uint64_t, std::deque<ReqId>> dramReqs;
 };
 
-}
-}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

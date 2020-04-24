@@ -22,8 +22,8 @@
 #include <sst/core/output.h>
 #include <sst/core/subcomponent.h>
 
-#include "../memEventBase.h"
 #include "../memEvent.h"
+#include "../memEventBase.h"
 #include "customCmdMemory.h"
 
 namespace SST {
@@ -35,27 +35,33 @@ namespace MemHierarchy {
  */
 class AMOCustomCmdMemHandler : public CustomCmdMemHandler {
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(AMOCustomCmdMemHandler, "memHierarchy", "amoCustomCmdHandler", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "Custom command handler for atomics (AMO)", SST::MemHierarchy::CustomCmdMemHandler)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(
+      AMOCustomCmdMemHandler, "memHierarchy", "amoCustomCmdHandler",
+      SST_ELI_ELEMENT_VERSION(1, 0, 0),
+      "Custom command handler for atomics (AMO)",
+      SST::MemHierarchy::CustomCmdMemHandler)
 
-/* Begin class defintion */
+  /* Begin class defintion */
 
-  AMOCustomCmdMemHandler(ComponentId_t id, Params &params, std::function<void(Addr,size_t,std::vector<uint8_t>&)> read, std::function<void(Addr,std::vector<uint8_t>*)> write)
-    : CustomCmdMemHandler(id, params, read, write) {}
+  AMOCustomCmdMemHandler(
+      ComponentId_t id, Params &params,
+      std::function<void(Addr, size_t, std::vector<uint8_t> &)> read,
+      std::function<void(Addr, std::vector<uint8_t> *)> write)
+      : CustomCmdMemHandler(id, params, read, write) {}
 
   ~AMOCustomCmdMemHandler() {}
 
-  CustomCmdMemHandler::MemEventInfo receive(MemEventBase* ev) override;
+  CustomCmdMemHandler::MemEventInfo receive(MemEventBase *ev) override;
 
-  CustomCmdInfo* ready(MemEventBase* ev) override;
+  CustomCmdInfo *ready(MemEventBase *ev) override;
 
-  MemEventBase* finish(MemEventBase *ev, uint32_t flags) override;
+  MemEventBase *finish(MemEventBase *ev, uint32_t flags) override;
 
 protected:
 private:
-};    // class AMOCustomCmdMemHandler
-}     // namespace MemHierarchy
-}     // namespace SST
+}; // class AMOCustomCmdMemHandler
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

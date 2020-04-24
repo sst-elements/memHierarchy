@@ -13,7 +13,6 @@
 // information, see the LICENSE file in the top level directory of the
 // distribution.
 
-
 #ifndef _H_SST_MEMH_VAULT_SIM_BACKEND
 #define _H_SST_MEMH_VAULT_SIM_BACKEND
 
@@ -24,30 +23,39 @@ namespace MemHierarchy {
 
 class VaultSimMemory : public FlagMemBackend {
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(VaultSimMemory, "memHierarchy", "vaultsim", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "Backend to interface with VaultSimC, a generic vaulted memory model", SST::MemHierarchy::FlagMemBackend)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(
+      VaultSimMemory, "memHierarchy", "vaultsim",
+      SST_ELI_ELEMENT_VERSION(1, 0, 0),
+      "Backend to interface with VaultSimC, a generic vaulted memory model",
+      SST::MemHierarchy::FlagMemBackend)
 
-    SST_ELI_DOCUMENT_PARAMS( MEMBACKEND_ELI_PARAMS,
-            /* Own parameters */
-            {"access_time", "Link latency for the link to the VaultSim memory model. With units (SI ok).", "100ns"} )
+  SST_ELI_DOCUMENT_PARAMS(MEMBACKEND_ELI_PARAMS,
+                          /* Own parameters */
+                          {"access_time",
+                           "Link latency for the link to the VaultSim memory "
+                           "model. With units (SI ok).",
+                           "100ns"})
 
-    SST_ELI_DOCUMENT_PORTS( {"cube_link", "Link to VaultSim.", {"VaultSimC.MemRespEvent", "VaultSimC.MemReqEvent"} } )
+  SST_ELI_DOCUMENT_PORTS({"cube_link",
+                          "Link to VaultSim.",
+                          {"VaultSimC.MemRespEvent", "VaultSimC.MemReqEvent"}})
 
-/* Begin class definition */
-    VaultSimMemory(ComponentId_t id, Params &params);
-    virtual bool issueRequest( ReqId, Addr, bool isWrite, uint32_t flags, unsigned numBytes );
-    virtual bool isClocked() { return false; }
+  /* Begin class definition */
+  VaultSimMemory(ComponentId_t id, Params &params);
+  virtual bool issueRequest(ReqId, Addr, bool isWrite, uint32_t flags,
+                            unsigned numBytes);
+  virtual bool isClocked() { return false; }
 
 private:
-    void build(Params& params);
-    void handleCubeEvent(SST::Event *event);
+  void build(Params &params);
+  void handleCubeEvent(SST::Event *event);
 
-    std::set<ReqId> outToCubes;
-    SST::Link *cube_link;
+  std::set<ReqId> outToCubes;
+  SST::Link *cube_link;
 };
 
-}
-}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif

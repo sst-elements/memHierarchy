@@ -18,19 +18,19 @@
 #ifndef COMPONENTS_MEMHIERARCHY_MEMORYINTERFACE
 #define COMPONENTS_MEMHIERARCHY_MEMORYINTERFACE
 
-#include <string>
-#include <utility>
 #include <map>
 #include <queue>
+#include <string>
+#include <utility>
 
-#include <sst/core/sst_types.h>
-#include <sst/core/link.h>
 #include <sst/core/interfaces/simpleMem.h>
+#include <sst/core/link.h>
 #include <sst/core/output.h>
+#include <sst/core/sst_types.h>
 
-#include "memEventBase.h"
-#include "memEvent.h"
 #include "customcmd/customCmdEvent.h"
+#include "memEvent.h"
+#include "memEventBase.h"
 
 namespace SST {
 
@@ -43,64 +43,79 @@ namespace MemHierarchy {
 class MemHierarchyInterface : public Interfaces::SimpleMem {
 
 public:
-/* Element Library Info */
-    SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(MemHierarchyInterface, "memHierarchy", "memInterface", SST_ELI_ELEMENT_VERSION(1,0,0),
-            "Interface to memory hierarchy. Converts SimpleMem requests into MemEventBases.", SST::Interfaces::SimpleMem)
+  /* Element Library Info */
+  SST_ELI_REGISTER_SUBCOMPONENT_DERIVED(
+      MemHierarchyInterface, "memHierarchy", "memInterface",
+      SST_ELI_ELEMENT_VERSION(1, 0, 0),
+      "Interface to memory hierarchy. Converts SimpleMem requests into "
+      "MemEventBases.",
+      SST::Interfaces::SimpleMem)
 
-    SST_ELI_DOCUMENT_PARAMS( {"port", "Optional, specify the owning component's port to used (not needed if this subcomponent is loaded in the input config)", ""} )
+  SST_ELI_DOCUMENT_PARAMS(
+      {"port",
+       "Optional, specify the owning component's port to used (not needed if "
+       "this subcomponent is loaded in the input config)",
+       ""})
 
-    SST_ELI_DOCUMENT_PORTS( {"port", "Port to memory hierarchy (caches/memory/etc.)", {}} )
+  SST_ELI_DOCUMENT_PORTS({"port",
+                          "Port to memory hierarchy (caches/memory/etc.)",
+                          {}})
 
-/* Begin class definition */
-    MemHierarchyInterface(SST::ComponentId_t id, Params &params, TimeConverter* time, HandlerBase* handler = NULL);
+  /* Begin class definition */
+  MemHierarchyInterface(SST::ComponentId_t id, Params &params,
+                        TimeConverter *time, HandlerBase *handler = NULL);
 
-    /** Initialize the link to be used to connect with MemHierarchy */
-    virtual bool initialize(const std::string &linkName, HandlerBase *handler = NULL);
+  /** Initialize the link to be used to connect with MemHierarchy */
+  virtual bool initialize(const std::string &linkName,
+                          HandlerBase *handler = NULL);
 
-    /** Link getter */
-    virtual SST::Link* getLink(void) const { return link_; }
+  /** Link getter */
+  virtual SST::Link *getLink(void) const { return link_; }
 
-    virtual void sendInitData(Request *req);
-    virtual void sendRequest(Request *req);
-    virtual Request* recvResponse(void);
+  virtual void sendInitData(Request *req);
+  virtual void sendRequest(Request *req);
+  virtual Request *recvResponse(void);
 
-    void init(unsigned int phase);
+  void init(unsigned int phase);
 
 protected:
-    /** Function to create the custom memEvent that will be used by MemHierarchy */
-    virtual MemEventBase* createCustomEvent(Interfaces::SimpleMem::Request* req) const;
+  /** Function to create the custom memEvent that will be used by MemHierarchy
+   */
+  virtual MemEventBase *
+  createCustomEvent(Interfaces::SimpleMem::Request *req) const;
 
-    /** Function to update a SimpleMem request with a custom memEvent response */
-    virtual void updateCustomRequest(Interfaces::SimpleMem::Request* req, MemEventBase *ev) const;
+  /** Function to update a SimpleMem request with a custom memEvent response */
+  virtual void updateCustomRequest(Interfaces::SimpleMem::Request *req,
+                                   MemEventBase *ev) const;
 
-    Output      output;
-    Addr        baseAddrMask_;
-    std::string rqstr_;
-    std::map<MemEventBase::id_type, Interfaces::SimpleMem::Request*> requests_;
-    SST::Link*  link_;
+  Output output;
+  Addr baseAddrMask_;
+  std::string rqstr_;
+  std::map<MemEventBase::id_type, Interfaces::SimpleMem::Request *> requests_;
+  SST::Link *link_;
 
-    bool initDone_;
-    std::queue<MemEventInit*> initSendQueue_;
-
+  bool initDone_;
+  std::queue<MemEventInit *> initSendQueue_;
 
 private:
+  /** Convert any incoming events to updated Requests, and fire handler */
+  void handleIncoming(SST::Event *ev);
 
-    /** Convert any incoming events to updated Requests, and fire handler */
-    void handleIncoming(SST::Event *ev);
+  /** Process MemEvents into updated Requests*/
+  Interfaces::SimpleMem::Request *processIncoming(MemEventBase *ev);
 
-    /** Process MemEvents into updated Requests*/
-    Interfaces::SimpleMem::Request* processIncoming(MemEventBase *ev);
+  /** Update Request with results of MemEvent. Calls updateCustomRequest for
+   * custom events. */
+  void updateRequest(Interfaces::SimpleMem::Request *req, MemEvent *me) const;
 
-    /** Update Request with results of MemEvent. Calls updateCustomRequest for custom events. */
-    void updateRequest(Interfaces::SimpleMem::Request* req, MemEvent *me) const;
+  /** Function used internally to create the memEvent that will be used by
+   * MemHierarchy */
+  MemEventBase *createMemEvent(Interfaces::SimpleMem::Request *req) const;
 
-    /** Function used internally to create the memEvent that will be used by MemHierarchy */
-    MemEventBase* createMemEvent(Interfaces::SimpleMem::Request* req) const;
-
-    HandlerBase*    recvHandler_;
+  HandlerBase *recvHandler_;
 };
 
-}
-}
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif
