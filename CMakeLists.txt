@@ -101,6 +101,7 @@ execute_process(
     OUTPUT_VARIABLE SST_CONFIG
 )
 
+# -------------------- COMPILE WITH EXISTING ELEMENTS --------------------
 execute_process(
     COMMAND ${SST_CONFIG} merlin merlin_LIBDIR
     OUTPUT_VARIABLE merlin
@@ -122,9 +123,9 @@ execute_process(
     OUTPUT_VARIABLE ariel
 )
 execute_process(
-    COMMAND ${SST_CONFIG} HMC HMC_LIBDIR
+    COMMAND ${SST_CONFIG} VaultSimC VaultSimC_LIBDIR
     OUTPUT_STRIP_TRAILING_WHITESPACE
-    OUTPUT_VARIABLE HMC
+    OUTPUT_VARIABLE VaultSimC
 )
 
 if (NOT "${merlin}" STREQUAL "")
@@ -152,47 +153,48 @@ if (NOT "${ariel}" STREQUAL "")
         Sieve/broadcastShim.cc Sieve/memmgr_sieve.cc)
 endif ()
 
-if (NOT "${HMC}" STREQUAL "")
-    list(APPEND INCLUDES -I${HMC})
-    list(APPEND LIBRARIES -L${HMC} -lHMC)
-    list(APPEND SOURCES membackend/goblinHMCBackend.cc)
-endif ()
-
-
-if (NOT "${DRAMSim}" STREQUAL "")
-    list(APPEND INCLUDES -I${DRAMSim})
-    list(APPEND LIBRARIES -L${DRAMSim} -ldramsim)
-    execute_process(COMMAND ${SST_REGISTER} DRAMSim DRAMSim_LIBDIR=${DRAMSim})
-    list(APPEND SOURCES membackend/pagedMultiBackend.cc membackend/dramSimBackend.cc)
-endif ()
-
-if (NOT "${HybridSim}" STREQUAL "")
-    list(APPEND INCLUDES -I${HybridSim})
-    list(APPEND LIBRARIES -L${HybridSim} -lHybridSim)
-    list(APPEND SOURCES membackend/hybridSimBackend.cc)
-endif ()
-
 if (NOT "${VaultSimC}" STREQUAL "")
     list(APPEND INCLUDES -I${VaultSimC})
     list(APPEND LIBRARIES -L${VaultSimC} -lVaultSimC)
     list(APPEND SOURCES membackend/vaultSimBackend.cc)
 endif ()
+# -------------------- COMPILE WITH EXISTING ELEMENTS --------------------
 
-if (NOT "${HBMDRAMSim}" STREQUAL "")
-    list(APPEND INCLUDES -I${HBMDRAMSim})
-    list(APPEND LIBRARIES -L${HBMDRAMSim} -lHBMDRAMSim)
+
+if (NOT "${DRAMSIM}" STREQUAL "")
+    list(APPEND INCLUDES -I${DRAMSIM})
+    list(APPEND LIBRARIES -L${DRAMSIM} -lDRAMSIM)
+    execute_process(COMMAND ${SST_REGISTER} DRAMSIM DRAMSIM_LIBDIR=${DRAMSIM})
+    list(APPEND SOURCES membackend/pagedMultiBackend.cc membackend/dramSimBackend.cc)
+endif ()
+
+if (NOT "${HBMDRAMSIM}" STREQUAL "")
+    list(APPEND INCLUDES -I${HBMDRAMSIM})
+    list(APPEND LIBRARIES -L${HBMDRAMSIM} -lHBMDRAMSIM)
     list(APPEND SOURCES membackend/HBMpagedMultiBackend.cc membackend/HBMdramSimBackend.cc)
 endif ()
 
-if (NOT "${ramulator}" STREQUAL "")
-    list(APPEND INCLUDES -I${ramulator})
-    list(APPEND LIBRARIES -L${ramulator} -lramulator)
+if (NOT "${HYBRIDSIM}" STREQUAL "")
+    list(APPEND INCLUDES -I${HYBRIDSIM})
+    list(APPEND LIBRARIES -L${HYBRIDSIM} -lHYBRIDSIM)
+    list(APPEND SOURCES membackend/hybridSimBackend.cc)
+endif ()
+
+if (NOT "${GOBLIN_HMCSIM}" STREQUAL "")
+    list(APPEND INCLUDES -I${GOBLIN_HMCSIM})
+    list(APPEND LIBRARIES -L${GOBLIN_HMCSIM} -lGOBLIN_HMCSIM)
+    list(APPEND SOURCES membackend/goblinHMCBackend.cc)
+endif ()
+
+if (NOT "${RAMULATOR}" STREQUAL "")
+    list(APPEND INCLUDES -I${RAMULATOR})
+    list(APPEND LIBRARIES -L${RAMULATOR} -lRAMULATOR)
     list(APPEND SOURCES membackend/ramulatorBackend.cc)
 endif ()
 
-if (NOT "${flashSim}" STREQUAL "")
-    list(APPEND INCLUDES -I${flashSim})
-    list(APPEND LIBRARIES -L${flashSim} -lflashSim)
+if (NOT "${FDSIM}" STREQUAL "")
+    list(APPEND INCLUDES -I${FDSIM})
+    list(APPEND LIBRARIES -L${FDSIM} -lFDSIM)
     list(APPEND SOURCES membackend/flashSimBackend.cc)
 endif ()
 
