@@ -39,7 +39,7 @@ macro(_sst_compile_link _name)
         target_compile_definitions(${_name} PRIVATE)
         target_compile_options(${_name} PRIVATE ${SST_FLAGS} ${INCLUDES})
         target_link_options(${_name} PRIVATE ${SST_LDFLAGS} ${LIBRARIES})
-        execute_process(COMMAND ${SST_REGISTER} ${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_NAME}_LIBDIR=${CMAKE_CURRENT_SOURCE_DIR})
+        execute_process(COMMAND ${SST_REGISTER} ${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_NAME}_LIBDIR=${CMAKE_CURRENT_SOURCE_DIR}/build)
     endif ()
 endmacro()
 
@@ -102,6 +102,7 @@ execute_process(
 )
 
 # -------------------- COMPILE WITH EXISTING ELEMENTS --------------------
+
 execute_process(
     COMMAND ${SST_CONFIG} merlin merlin_LIBDIR
     OUTPUT_VARIABLE merlin
@@ -143,7 +144,7 @@ endif ()
 if (NOT "${CramSim}" STREQUAL "")
     list(APPEND INCLUDES -I${CramSim})
     list(APPEND LIBRARIES -L${CramSim} -lCramSim)
-    list(APPEND SOURCES membackend/CramSimBackend.cc)
+    list(APPEND SOURCES membackend/cramSimBackend.cc)
 endif ()
 
 if (NOT "${ariel}" STREQUAL "")
@@ -158,6 +159,7 @@ if (NOT "${VaultSimC}" STREQUAL "")
     list(APPEND LIBRARIES -L${VaultSimC} -lVaultSimC)
     list(APPEND SOURCES membackend/vaultSimBackend.cc)
 endif ()
+
 # -------------------- COMPILE WITH EXISTING ELEMENTS --------------------
 
 
